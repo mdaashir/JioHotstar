@@ -50,7 +50,7 @@ Always-on-top is remembered across launches. Because it would otherwise be invis
 
 ## Tray
 
-A tray icon is created at startup with a menu offering Open, Picture-in-picture, Toggle fullscreen, Keep on top (a checkbox reflecting the real state), and Exit. Clicking the icon restores and focuses the window.
+A tray icon is created at startup with a menu offering Open, Picture-in-picture, Toggle fullscreen, Keep on top (a checkbox reflecting the real state), Hide scrollbars, and Exit. Clicking the icon restores and focuses the window.
 
 Closing the player hides it to the tray instead of quitting; the app stays alive so playback and the session are preserved. Quitting is always possible from the tray's Exit item, which sets a `before-quit` flag so the close handler stops intercepting. Setting `closeToTray` to `false` in `settings.json` restores plain close-quits behaviour.
 
@@ -60,12 +60,12 @@ The tray icon is the official JioHotstar mark, generated from `resources/jiohots
 
 Every icon in the app comes from one source: `resources/jiohotstar.ico`, the official mark published by JioHotstar as the site's favicon. `scripts/generate-icons.mjs` extracts the largest frame (64px, PNG-compressed) and derives the rest, so the window, taskbar, tray, installer, favicon, and splash screen cannot drift apart.
 
-| Output                                | Size  | Used by                              |
-| ------------------------------------- | ----- | ------------------------------------ |
-| `build/icon.png`                      | 512px | Installer, `.exe`, `.dmg`, AppImage  |
-| `resources/icon.png`                  | 256px | Window and taskbar icon              |
-| `resources/tray-icon.png`             | 32px  | System tray                          |
-| `src/renderer/src/assets/app-icon.png`| 128px | Splash screen and renderer favicon   |
+| Output                                 | Size  | Used by                             |
+| -------------------------------------- | ----- | ----------------------------------- |
+| `build/icon.png`                       | 512px | Installer, `.exe`, `.dmg`, AppImage |
+| `resources/icon.png`                   | 256px | Window and taskbar icon             |
+| `resources/tray-icon.png`              | 32px  | System tray                         |
+| `src/renderer/src/assets/app-icon.png` | 128px | Splash screen and renderer favicon  |
 
 Regenerate after changing the source icon with:
 
@@ -74,6 +74,16 @@ node scripts/generate-icons.mjs
 ```
 
 The script decodes the ICO and its PNG frames with no image dependencies, and resamples with alpha-weighted averaging so transparent edges do not darken the mark. Upscaling beyond 64px is unavoidable here — the site publishes no larger raster or SVG — so the 512px installer icon is a smooth interpolation of the official artwork rather than a true high-resolution original.
+
+## Scrollbars
+
+Scrollbars are hidden by default while scrolling stays fully functional — wheel, trackpad, keyboard, and touch all work, and the reclaimed ~15px goes back to the content.
+
+This uses `webContents.insertCSS()` with a small stylesheet, so nothing executes inside the page and no preload is attached to it. `overflow: hidden` is deliberately **not** used, since that would disable scrolling outright. The stylesheet is re-applied after each navigation, because a new document starts clean.
+
+Toggle it from the tray under **Hide scrollbars**. Setting `hideScrollbars` to `false` in `settings.json` restores the native bar.
+
+The site already hides scrollbars on its own inner carousels; only the root scroller is affected by this change.
 
 ## Picture-in-picture
 
@@ -103,7 +113,7 @@ src/shared/     IPC contracts, constants, and pure policies
 
 ## Preferences
 
-Window geometry, always-on-top, and close-to-tray are persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Nothing about the account, the session, or playback is ever written to settings.
+Window geometry, always-on-top, close-to-tray, and scrollbar visibility are persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Nothing about the account, the session, or playback is ever written to settings.
 
 Saved bounds are validated on read: values that are malformed are discarded, sizes are clamped to the minimum window size and the primary display, and a window that would land off-screen (for example after a monitor is unplugged) is re-centred instead. Bounds are not recorded while the window is fullscreen, so entering fullscreen never overwrites the restore size.
 
@@ -125,7 +135,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen, always-on-top, and native picture-in-picture from the keyboard, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys land in their own branch.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen, always-on-top, and native picture-in-picture from the keyboard, hides scrollbars without breaking scrolling, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys land in their own branch.
 
 ## Startup sequence
 
