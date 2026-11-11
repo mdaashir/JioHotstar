@@ -3,6 +3,7 @@ import { isWindowState, type WindowState } from '../../shared/window-state'
 
 interface SettingsSchema {
   windowState?: WindowState
+  alwaysOnTop?: boolean
 }
 
 const store = new Store<SettingsSchema>({ name: 'settings' })
@@ -16,5 +17,13 @@ export const settingsStore = {
 
   setWindowState(state: WindowState): void {
     store.set('windowState', state)
+  },
+
+  getAlwaysOnTop(): boolean {
+    return store.get('alwaysOnTop') === true
+  },
+
+  setAlwaysOnTop(alwaysOnTop: boolean): void {
+    store.set('alwaysOnTop', alwaysOnTop)
   }
 }
