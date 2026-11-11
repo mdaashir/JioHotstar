@@ -26,9 +26,18 @@ describe('matchWindowCommand on Windows and Linux', () => {
     )
   })
 
+  it('maps ctrl+shift+P to picture-in-picture', () => {
+    expect(matchWindowCommand(input({ key: 'P', control: true, shift: true }), 'win32')).toBe(
+      'toggle-picture-in-picture'
+    )
+  })
+
   it('accepts a lowercase key regardless of shift state', () => {
     expect(matchWindowCommand(input({ key: 't', control: true, shift: true }), 'win32')).toBe(
       'toggle-always-on-top'
+    )
+    expect(matchWindowCommand(input({ key: 'p', control: true, shift: true }), 'win32')).toBe(
+      'toggle-picture-in-picture'
     )
   })
 
@@ -37,21 +46,25 @@ describe('matchWindowCommand on Windows and Linux', () => {
     expect(matchWindowCommand(input({ key: 'F11', alt: true }), 'win32')).toBeNull()
   })
 
-  it('ignores ctrl+T without shift, which belongs to the site', () => {
+  it('ignores ctrl+T and ctrl+P without shift, which belong to the site', () => {
     expect(matchWindowCommand(input({ key: 'T', control: true }), 'win32')).toBeNull()
+    expect(matchWindowCommand(input({ key: 'P', control: true }), 'win32')).toBeNull()
   })
 
-  it('ignores other modifiers combined with the toggle', () => {
+  it('ignores other modifiers combined with the toggles', () => {
     expect(
       matchWindowCommand(input({ key: 'T', control: true, shift: true, alt: true }), 'win32')
     ).toBeNull()
     expect(
-      matchWindowCommand(input({ key: 'T', control: true, shift: true, meta: true }), 'win32')
+      matchWindowCommand(input({ key: 'P', control: true, shift: true, meta: true }), 'win32')
     ).toBeNull()
   })
 
   it('ignores key up events so the command fires once', () => {
     expect(matchWindowCommand(input({ key: 'F11', type: 'keyUp' }), 'win32')).toBeNull()
+    expect(
+      matchWindowCommand(input({ key: 'P', type: 'keyUp', control: true, shift: true }), 'win32')
+    ).toBeNull()
   })
 })
 
@@ -65,6 +78,12 @@ describe('matchWindowCommand on macOS', () => {
   it('maps cmd+shift+T to always on top', () => {
     expect(matchWindowCommand(input({ key: 't', meta: true, shift: true }), 'darwin')).toBe(
       'toggle-always-on-top'
+    )
+  })
+
+  it('maps cmd+shift+P to picture-in-picture', () => {
+    expect(matchWindowCommand(input({ key: 'p', meta: true, shift: true }), 'darwin')).toBe(
+      'toggle-picture-in-picture'
     )
   })
 
