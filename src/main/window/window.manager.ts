@@ -8,6 +8,7 @@ import { appIcon } from '../app.icon'
 import { togglePictureInPicture as runPictureInPictureToggle } from '../playback/picture-in-picture.service'
 import { settingsStore } from '../store/settings.store'
 import { installWindowCommands } from './window.commands'
+import { installScrollbarHiding, type ScrollbarController } from './scrollbar.hider'
 import { toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
 import { applyWindowState } from './window.state'
 
@@ -31,6 +32,7 @@ export class WindowManager {
   private failureWindow: BrowserWindow | null = null
   private onVisibilityChange: (() => void) | null = null
   private onPictureInPicture: ((status: string) => void) | null = null
+  private scrollbars: ScrollbarController | null = null
 
   setVisibilityListener(listener: () => void): void {
     this.onVisibilityChange = listener
@@ -38,6 +40,15 @@ export class WindowManager {
 
   setPictureInPictureListener(listener: (status: string) => void): void {
     this.onPictureInPicture = listener
+  }
+
+  toggleScrollbars(): boolean {
+    const next = !settingsStore.getHideScrollbars()
+
+    settingsStore.setHideScrollbars(next)
+    this.scrollbars?.setEnabled(next)
+
+    return next
   }
 
   toggleFullscreen(): void {
@@ -144,6 +155,8 @@ export class WindowManager {
         this.onPictureInPicture?.(status)
       }
     })
+
+    this.scrollbars = installScrollbarHiding(player)
 
     player.on('close', (event) => {
       if (isQuitting() || !settingsStore.getCloseToTray()) {

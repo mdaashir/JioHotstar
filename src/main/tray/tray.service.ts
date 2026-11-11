@@ -102,6 +102,15 @@ export class TrayService {
             this.refresh()
           }
         },
+        {
+          label: labels.hideScrollbars,
+          type: 'checkbox',
+          checked: settingsStore.getHideScrollbars(),
+          click: () => {
+            this.windows.toggleScrollbars()
+            this.refresh()
+          }
+        },
         { type: 'separator' },
         {
           label: labels.quit,

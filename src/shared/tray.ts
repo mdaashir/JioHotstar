@@ -3,6 +3,7 @@ export interface TrayLabels {
   readonly pictureInPicture: string
   readonly fullscreen: string
   readonly alwaysOnTop: string
+  readonly hideScrollbars: string
   readonly quit: string
 }
 
@@ -12,6 +13,7 @@ export function trayLabels(alwaysOnTop: boolean, isMac: boolean): TrayLabels {
     pictureInPicture: 'Picture-in-picture',
     fullscreen: 'Toggle fullscreen',
     alwaysOnTop: alwaysOnTop ? 'Unpin from top' : 'Keep on top',
+    hideScrollbars: 'Hide scrollbars',
     quit: isMac ? 'Quit JioHotstar' : 'Exit'
   }
 }

@@ -5,6 +5,7 @@ interface SettingsSchema {
   windowState?: WindowState
   alwaysOnTop?: boolean
   closeToTray?: boolean
+  hideScrollbars?: boolean
 }
 
 const store = new Store<SettingsSchema>({ name: 'settings' })
@@ -36,5 +37,15 @@ export const settingsStore = {
 
   setCloseToTray(closeToTray: boolean): void {
     store.set('closeToTray', closeToTray)
+  },
+
+  getHideScrollbars(): boolean {
+    const value: unknown = store.get('hideScrollbars')
+
+    return value === undefined ? true : value === true
+  },
+
+  setHideScrollbars(hideScrollbars: boolean): void {
+    store.set('hideScrollbars', hideScrollbars)
   }
 }
