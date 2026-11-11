@@ -21,17 +21,17 @@ No credentials were used and no content was played.
 
 ## Results
 
-| Check | Result |
-| --- | --- |
-| `components.whenReady()` | ready — Widevine CDM `4.10.3112.0` |
-| `requestMediaKeySystemAccess('com.widevine.alpha')` on local `file://` | granted |
-| `createMediaKeys()` | succeeded |
-| Robustness granted | `SW_SECURE_DECODE` |
-| `https://www.jiohotstar.com/` | loads, redirects to `https://www.hotstar.com/in/home` |
-| Widevine negotiation on the live player page | granted |
-| Local `http://127.0.0.1` | loads |
-| `https://example.com` | loads |
-| Third-party tracking sub-resources (`*.fls.doubleclick.net`) | `ERR_SSL_PROTOCOL_ERROR`, non-main-frame |
+| Check                                                                  | Result                                                |
+| ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| `components.whenReady()`                                               | ready — Widevine CDM `4.10.3112.0`                    |
+| `requestMediaKeySystemAccess('com.widevine.alpha')` on local `file://` | granted                                               |
+| `createMediaKeys()`                                                    | succeeded                                             |
+| Robustness granted                                                     | `SW_SECURE_DECODE`                                    |
+| `https://www.jiohotstar.com/`                                          | loads, redirects to `https://www.hotstar.com/in/home` |
+| Widevine negotiation on the live player page                           | granted                                               |
+| Local `http://127.0.0.1`                                               | loads                                                 |
+| `https://example.com`                                                  | loads                                                 |
+| Third-party tracking sub-resources (`*.fls.doubleclick.net`)           | `ERR_SSL_PROTOCOL_ERROR`, non-main-frame              |
 
 ## Findings that change the implementation
 

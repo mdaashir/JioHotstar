@@ -38,7 +38,13 @@ export function PlaybackError({ reason }: PlaybackErrorProps): JSX.Element {
         {copy.title}
       </h1>
       <p className="failure-detail">{copy.detail}</p>
-      <button type="button" className="retry" data-testid="retry" onClick={handleRetry} disabled={retrying}>
+      <button
+        type="button"
+        className="retry"
+        data-testid="retry"
+        onClick={handleRetry}
+        disabled={retrying}
+      >
         {retrying ? 'Retrying…' : 'Try again'}
       </button>
     </main>

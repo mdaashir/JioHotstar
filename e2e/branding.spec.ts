@@ -30,9 +30,7 @@ test('ships the branded icon in the splash and the app icon', async () => {
 
     const packagedIcons = await app.evaluate(({ nativeImage, app: electronApp }) => {
       const main = nativeImage.createFromPath(`${electronApp.getAppPath()}/resources/icon.png`)
-      const tray = nativeImage.createFromPath(
-        `${electronApp.getAppPath()}/resources/tray-icon.png`
-      )
+      const tray = nativeImage.createFromPath(`${electronApp.getAppPath()}/resources/tray-icon.png`)
 
       return {
         main: { empty: main.isEmpty(), width: main.getSize().width },
