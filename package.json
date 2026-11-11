@@ -27,7 +27,9 @@
     "dist:linux": "npm run build && electron-builder --linux",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "electron-store": "8.2.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.0",

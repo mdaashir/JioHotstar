@@ -2,6 +2,8 @@ import { app, BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
+import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
+import { applyWindowState } from './window.state'
 
 const SPLASH_WIDTH = 460
 const SPLASH_HEIGHT = 320
@@ -9,8 +11,6 @@ const FAILURE_WIDTH = 520
 const FAILURE_HEIGHT = 400
 const PLAYER_WIDTH = 1280
 const PLAYER_HEIGHT = 800
-const PLAYER_MIN_WIDTH = 960
-const PLAYER_MIN_HEIGHT = 600
 
 const APP_WEB_PREFERENCES = {
   contextIsolation: true,
@@ -74,8 +74,8 @@ class WindowManager {
     const player = new BrowserWindow({
       width: PLAYER_WIDTH,
       height: PLAYER_HEIGHT,
-      minWidth: PLAYER_MIN_WIDTH,
-      minHeight: PLAYER_MIN_HEIGHT,
+      minWidth: MIN_WINDOW_WIDTH,
+      minHeight: MIN_WINDOW_HEIGHT,
       show: false,
       backgroundColor: '#000000',
       title: 'JioHotstar',
@@ -85,6 +85,8 @@ class WindowManager {
         devTools: !app.isPackaged
       }
     })
+
+    applyWindowState(player)
 
     player.once('ready-to-show', () => {
       player.show()
