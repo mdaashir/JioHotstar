@@ -54,7 +54,26 @@ A tray icon is created at startup with a menu offering Open, Picture-in-picture,
 
 Closing the player hides it to the tray instead of quitting; the app stays alive so playback and the session are preserved. Quitting is always possible from the tray's Exit item, which sets a `before-quit` flag so the close handler stops intercepting. Setting `closeToTray` to `false` in `settings.json` restores plain close-quits behaviour.
 
-The tray icon is a generic play mark drawn by `scripts/generate-tray-icon.mjs`, not JioHotstar's logo — using their brand marks would be a licensing question, so the icon stays deliberately neutral and can be replaced when real assets exist.
+The tray icon is the official JioHotstar mark, generated from `resources/jiohotstar.ico` alongside every other icon — see [Branding](#branding).
+
+## Branding
+
+Every icon in the app comes from one source: `resources/jiohotstar.ico`, the official mark published by JioHotstar as the site's favicon. `scripts/generate-icons.mjs` extracts the largest frame (64px, PNG-compressed) and derives the rest, so the window, taskbar, tray, installer, favicon, and splash screen cannot drift apart.
+
+| Output                                | Size  | Used by                              |
+| ------------------------------------- | ----- | ------------------------------------ |
+| `build/icon.png`                      | 512px | Installer, `.exe`, `.dmg`, AppImage  |
+| `resources/icon.png`                  | 256px | Window and taskbar icon              |
+| `resources/tray-icon.png`             | 32px  | System tray                          |
+| `src/renderer/src/assets/app-icon.png`| 128px | Splash screen and renderer favicon   |
+
+Regenerate after changing the source icon with:
+
+```bash
+node scripts/generate-icons.mjs
+```
+
+The script decodes the ICO and its PNG frames with no image dependencies, and resamples with alpha-weighted averaging so transparent edges do not darken the mark. Upscaling beyond 64px is unavoidable here — the site publishes no larger raster or SVG — so the 512px installer icon is a smooth interpolation of the official artwork rather than a true high-resolution original.
 
 ## Picture-in-picture
 
