@@ -1,0 +1,47 @@
+appId: com.jiohotstar.desktop
+productName: JioHotstar
+copyright: Copyright © 2026
+
+directories:
+  output: release
+  buildResources: build
+
+electronDist: node_modules/electron/dist
+electronVersion: 45.2.1
+
+asar: true
+npmRebuild: false
+
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  category: public.app-category.entertainment
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: AudioVideo
