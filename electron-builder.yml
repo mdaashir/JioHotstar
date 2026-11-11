@@ -17,6 +17,10 @@ files:
   - package.json
   - '!**/*.map'
 
+extraResources:
+  - from: resources/tray-icon.png
+    to: tray-icon.png
+
 win:
   target:
     - target: nsis

@@ -3,7 +3,10 @@ import { join } from 'node:path'
 import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
+import { isQuitting } from '../app.lifecycle'
+import { settingsStore } from '../store/settings.store'
 import { installWindowCommands } from './window.commands'
+import { toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
 import { applyWindowState } from './window.state'
 
 const SPLASH_WIDTH = 460
@@ -20,10 +23,37 @@ const APP_WEB_PREFERENCES = {
   webSecurity: true
 } as const
 
-class WindowManager {
+export class WindowManager {
   private splashWindow: BrowserWindow | null = null
   private playerWindow: BrowserWindow | null = null
   private failureWindow: BrowserWindow | null = null
+  private onVisibilityChange: (() => void) | null = null
+
+  setVisibilityListener(listener: () => void): void {
+    this.onVisibilityChange = listener
+  }
+
+  toggleFullscreen(): void {
+    const player = this.getPlayerWindow() ?? this.getFailureWindow()
+
+    if (player !== null) {
+      toggleFullscreen(player)
+    }
+  }
+
+  toggleAlwaysOnTop(): boolean {
+    const player = this.getPlayerWindow() ?? this.getFailureWindow()
+
+    if (player === null) {
+      return false
+    }
+
+    return toggleAlwaysOnTop(player)
+  }
+
+  isPlayerPinned(): boolean {
+    return settingsStore.getAlwaysOnTop()
+  }
 
   createSplashWindow(): BrowserWindow {
     const existing = this.getSplashWindow()
@@ -90,6 +120,15 @@ class WindowManager {
     applyWindowState(player)
     installWindowCommands(player)
 
+    player.on('close', (event) => {
+      if (isQuitting() || !settingsStore.getCloseToTray()) {
+        return
+      }
+
+      event.preventDefault()
+      player.hide()
+    })
+
     player.once('ready-to-show', () => {
       player.show()
       this.closeSplash()
@@ -97,6 +136,14 @@ class WindowManager {
 
     player.on('closed', () => {
       this.playerWindow = null
+    })
+
+    player.on('show', () => {
+      this.onVisibilityChange?.()
+    })
+
+    player.on('hide', () => {
+      this.onVisibilityChange?.()
     })
 
     void player.loadURL(PLAYER_URL)
@@ -164,6 +211,12 @@ class WindowManager {
 
     target.show()
     target.focus()
+  }
+
+  isPlayerVisible(): boolean {
+    const player = this.getPlayerWindow()
+
+    return player !== null && player.isVisible()
   }
 
   getSplashWindow(): BrowserWindow | null {
