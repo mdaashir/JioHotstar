@@ -1,5 +1,6 @@
 export const IPC_CHANNELS = {
-  APP_INFO: 'app:info'
+  APP_INFO: 'app:info',
+  PLAYER_RETRY: 'player:retry'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

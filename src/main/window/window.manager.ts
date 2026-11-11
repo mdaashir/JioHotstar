@@ -1,12 +1,28 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'node:path'
-import { installNavigationGuards } from '../security/navigation.guard'
+import { PLAYER_URL } from '../../shared/constants'
+import type { StartupFailure } from '../../shared/startup'
 
 const SPLASH_WIDTH = 460
 const SPLASH_HEIGHT = 320
+const FAILURE_WIDTH = 520
+const FAILURE_HEIGHT = 400
+const PLAYER_WIDTH = 1280
+const PLAYER_HEIGHT = 800
+const PLAYER_MIN_WIDTH = 960
+const PLAYER_MIN_HEIGHT = 600
+
+const APP_WEB_PREFERENCES = {
+  contextIsolation: true,
+  nodeIntegration: false,
+  sandbox: true,
+  webSecurity: true
+} as const
 
 class WindowManager {
   private splashWindow: BrowserWindow | null = null
+  private playerWindow: BrowserWindow | null = null
+  private failureWindow: BrowserWindow | null = null
 
   createSplashWindow(): BrowserWindow {
     const existing = this.getSplashWindow()
@@ -27,16 +43,11 @@ class WindowManager {
       backgroundColor: '#080b10',
       title: 'JioHotstar',
       webPreferences: {
+        ...APP_WEB_PREFERENCES,
         preload: join(__dirname, '../preload/index.js'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-        webSecurity: true,
         devTools: !app.isPackaged
       }
     })
-
-    installNavigationGuards(splash)
 
     splash.once('ready-to-show', () => {
       splash.show()
@@ -46,26 +57,153 @@ class WindowManager {
       this.splashWindow = null
     })
 
-    const devServerUrl = process.env['ELECTRON_RENDERER_URL']
-
-    if (devServerUrl !== undefined) {
-      void splash.loadURL(devServerUrl)
-    } else {
-      void splash.loadFile(join(__dirname, '../renderer/index.html'))
-    }
-
+    this.loadRenderer(splash)
     this.splashWindow = splash
     return splash
   }
 
-  getSplashWindow(): BrowserWindow | null {
-    const splash = this.splashWindow
+  createPlayerWindow(): BrowserWindow {
+    const existing = this.getPlayerWindow()
 
-    if (splash === null || splash.isDestroyed()) {
+    if (existing !== null) {
+      existing.show()
+      existing.focus()
+      return existing
+    }
+
+    const player = new BrowserWindow({
+      width: PLAYER_WIDTH,
+      height: PLAYER_HEIGHT,
+      minWidth: PLAYER_MIN_WIDTH,
+      minHeight: PLAYER_MIN_HEIGHT,
+      show: false,
+      backgroundColor: '#000000',
+      title: 'JioHotstar',
+      autoHideMenuBar: true,
+      webPreferences: {
+        ...APP_WEB_PREFERENCES,
+        devTools: !app.isPackaged
+      }
+    })
+
+    player.once('ready-to-show', () => {
+      player.show()
+      this.closeSplash()
+    })
+
+    player.on('closed', () => {
+      this.playerWindow = null
+    })
+
+    void player.loadURL(PLAYER_URL)
+
+    this.playerWindow = player
+    return player
+  }
+
+  showFailure(reason: StartupFailure): void {
+    const existing = this.getFailureWindow()
+
+    if (existing !== null) {
+      this.loadRenderer(existing, `/error?reason=${reason}`)
+      existing.show()
+      existing.focus()
+    } else {
+      const failure = new BrowserWindow({
+        width: FAILURE_WIDTH,
+        height: FAILURE_HEIGHT,
+        resizable: false,
+        maximizable: false,
+        title: 'JioHotstar',
+        backgroundColor: '#080b10',
+        webPreferences: {
+          ...APP_WEB_PREFERENCES,
+          preload: join(__dirname, '../preload/index.js'),
+          devTools: !app.isPackaged
+        }
+      })
+
+      failure.on('closed', () => {
+        this.failureWindow = null
+      })
+
+      this.loadRenderer(failure, `/error?reason=${reason}`)
+      this.failureWindow = failure
+    }
+
+    this.destroy(this.splashWindow)
+    this.splashWindow = null
+    this.destroy(this.playerWindow)
+    this.playerWindow = null
+  }
+
+  closeFailure(): void {
+    this.destroy(this.failureWindow)
+    this.failureWindow = null
+  }
+
+  closeSplash(): void {
+    this.destroy(this.splashWindow)
+    this.splashWindow = null
+  }
+
+  focusPrimaryWindow(): void {
+    const target = this.getPlayerWindow() ?? this.getFailureWindow() ?? this.getSplashWindow()
+
+    if (target === null) {
+      return
+    }
+
+    if (target.isMinimized()) {
+      target.restore()
+    }
+
+    target.show()
+    target.focus()
+  }
+
+  getSplashWindow(): BrowserWindow | null {
+    return this.alive(this.splashWindow)
+  }
+
+  getPlayerWindow(): BrowserWindow | null {
+    return this.alive(this.playerWindow)
+  }
+
+  getFailureWindow(): BrowserWindow | null {
+    return this.alive(this.failureWindow)
+  }
+
+  private alive(window: BrowserWindow | null): BrowserWindow | null {
+    if (window === null || window.isDestroyed()) {
       return null
     }
 
-    return splash
+    return window
+  }
+
+  private destroy(window: BrowserWindow | null): void {
+    if (window !== null && !window.isDestroyed()) {
+      window.destroy()
+    }
+  }
+
+  private loadRenderer(target: BrowserWindow, hash?: string): void {
+    const devServerUrl = process.env['ELECTRON_RENDERER_URL']
+
+    if (devServerUrl !== undefined) {
+      void target.loadURL(hash === undefined ? devServerUrl : `${devServerUrl}#${hash}`)
+      return
+    }
+
+    const indexFile = join(__dirname, '../renderer/index.html')
+
+    if (hash === undefined) {
+      void target.loadFile(indexFile)
+      return
+    }
+
+    void target.loadFile(indexFile, { hash })
   }
 }
 

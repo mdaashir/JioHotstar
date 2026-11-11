@@ -1,7 +1,8 @@
 import { shell } from 'electron'
-import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
+import type { BrowserWindowConstructorOptions, WebContents } from 'electron'
 import { ALLOWED_NAVIGATION_HOSTS } from '../../shared/constants'
 import { decideNavigation } from '../../shared/navigation'
+import { isAppUrl } from './app-url'
 
 const HARDENED_WINDOW_OPTIONS: BrowserWindowConstructorOptions = {
   webPreferences: {
@@ -12,20 +13,8 @@ const HARDENED_WINDOW_OPTIONS: BrowserWindowConstructorOptions = {
   }
 }
 
-function isAppUrl(rawUrl: string): boolean {
-  const devServerUrl = process.env['ELECTRON_RENDERER_URL']
-
-  if (devServerUrl !== undefined && rawUrl.startsWith(devServerUrl)) {
-    return true
-  }
-
-  return rawUrl.startsWith('file://')
-}
-
-export function installNavigationGuards(window: BrowserWindow): void {
-  const { webContents } = window
-
-  webContents.setWindowOpenHandler(({ url }) => {
+export function installNavigationGuards(contents: WebContents): void {
+  contents.setWindowOpenHandler(({ url }) => {
     if (isAppUrl(url)) {
       return { action: 'allow', overrideBrowserWindowOptions: HARDENED_WINDOW_OPTIONS }
     }
@@ -43,7 +32,7 @@ export function installNavigationGuards(window: BrowserWindow): void {
     return { action: 'deny' }
   })
 
-  webContents.on('will-navigate', (event, url) => {
+  contents.on('will-navigate', (event, url) => {
     if (isAppUrl(url)) {
       return
     }
@@ -61,7 +50,19 @@ export function installNavigationGuards(window: BrowserWindow): void {
     }
   })
 
-  webContents.on('will-attach-webview', (event) => {
+  contents.on('will-attach-webview', (event) => {
     event.preventDefault()
+  })
+
+  contents.on('will-frame-navigate', (event) => {
+    if (event.isMainFrame) {
+      return
+    }
+
+    const decision = decideNavigation(event.url, ALLOWED_NAVIGATION_HOSTS)
+
+    if (decision === 'external') {
+      event.preventDefault()
+    }
   })
 }
