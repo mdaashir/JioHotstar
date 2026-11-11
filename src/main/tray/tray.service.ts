@@ -1,20 +1,12 @@
-import { Menu, Tray, app, nativeImage } from 'electron'
-import { join } from 'node:path'
+import { Menu, Tray, app } from 'electron'
 import { APP_NAME } from '../../shared/constants'
 import { trayLabels } from '../../shared/tray'
+import { appIcon } from '../app.icon'
 import { settingsStore } from '../store/settings.store'
 import type { WindowManager } from '../window/window.manager'
 
 const TRAY_TOOLTIP = APP_NAME
 const NOTICE_DURATION_MS = 4000
-
-function trayIconPath(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, 'tray-icon.png')
-  }
-
-  return join(app.getAppPath(), 'resources', 'tray-icon.png')
-}
 
 function pictureInPictureNotice(status: string): string | null {
   if (status === 'no-video') {
@@ -42,7 +34,7 @@ export class TrayService {
       return
     }
 
-    const image = nativeImage.createFromPath(trayIconPath())
+    const image = appIcon('tray-icon.png')
 
     this.tray = new Tray(image)
     this.tray.setToolTip(TRAY_TOOLTIP)

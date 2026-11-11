@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import type { AppInfo } from '../../../shared/ipc'
+import appIcon from '../assets/app-icon.png'
 
 export function Splash(): JSX.Element {
   const [info, setInfo] = useState<AppInfo | null>(null)
@@ -36,7 +37,7 @@ export function Splash(): JSX.Element {
   return (
     <main className="splash">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true" />
+        <img className="brand-mark" src={appIcon} alt="" aria-hidden="true" />
         <h1 data-testid="app-name">JioHotstar</h1>
       </div>
       <p className="tagline">Desktop shell</p>

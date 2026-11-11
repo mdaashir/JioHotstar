@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, session } from 'electron'
 import { APP_ID, APP_NAME } from '../shared/constants'
 import { markQuitting } from './app.lifecycle'
+import { appIcon } from './app.icon'
 import { registerIpcHandlers } from './ipc/ipc.registry'
 import { installNavigationGuards } from './security/navigation.guard'
 import { installPermissionPolicy } from './security/permission.policy'
@@ -12,6 +13,12 @@ app.setName(APP_NAME)
 
 if (process.platform === 'win32') {
   app.setAppUserModelId(APP_ID)
+}
+
+const dockIcon = appIcon()
+
+if (process.platform === 'darwin' && app.dock !== undefined) {
+  app.dock.setIcon(dockIcon)
 }
 
 if (app.isPackaged) {
