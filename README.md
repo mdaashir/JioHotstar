@@ -85,6 +85,18 @@ Toggle it from the tray under **Hide scrollbars**. Setting `hideScrollbars` to `
 
 The site already hides scrollbars on its own inner carousels; only the root scroller is affected by this change.
 
+## Media keys
+
+`MediaPlayPause` and `MediaStop` are registered with `globalShortcut` and forwarded to the player page, which acts on the largest playing `<video>`. They work while the app is in the background.
+
+**Next and previous track are deliberately not registered.** Skipping episodes would require driving the site's own controls, and there is no reliable way to do that from outside its React tree. Registering the keys and doing nothing would be worse than leaving them to the OS, so they stay unclaimed.
+
+The action script is injected with `userGesture: true`, because `play()` is otherwise refused by the autoplay policy after a pause. It picks the largest video with a decoded frame, prefers one that is playing, and reports `no-video` rather than throwing when nothing is loaded — that surfaces as a brief tray tooltip.
+
+Registrations are released on `before-quit`. A leaked global shortcut keeps swallowing the user's media keys in every other application, which is a bug the user cannot work around.
+
+`navigator.mediaSession` exists on the site, but its `setActionHandler` callbacks cannot be invoked from outside the page, so this feature drives the media element directly instead.
+
 ## Picture-in-picture
 
 Uses Chromium's native video PiP, so the floating window is the operating system's own — draggable, resizable, and kept above other windows by the platform. Available from the tray menu and from `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS); one action toggles in and out.
@@ -135,7 +147,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen, always-on-top, and native picture-in-picture from the keyboard, hides scrollbars without breaking scrolling, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys land in their own branch.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen, always-on-top, and native picture-in-picture from the keyboard, hides scrollbars without breaking scrolling, responds to the system media keys, and lives in the tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player.
 
 ## Startup sequence
 
