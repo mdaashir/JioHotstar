@@ -33,14 +33,16 @@ npm run dev
 ## Architecture
 
 ```
-src/main/       main process — window, IPC handlers, navigation guards
+src/main/       main process — window, IPC handlers, playback, startup, guards
 src/preload/    contextBridge surface only, no business logic
-src/renderer/   React UI for local utility windows (splash, settings, offline)
-src/shared/     IPC contracts, constants, and pure navigation policy
+src/renderer/   React UI for local windows (splash, error screen, eventually settings)
+src/shared/     IPC contracts, constants, and pure policies
 ```
 
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity: true` on every window.
-- `ipcRenderer` is never exposed. The renderer sees only the narrow, typed `window.jiohotstar` bridge.
+- The player window gets **no preload**. Third-party content has no bridge surface at all; only local windows see `window.jiohotstar`.
+- `ipcRenderer` is never exposed, and every handler verifies the sender is a local window before acting.
+- Permissions are denied by default; only `fullscreen` and `mediaKeySystem` are granted.
 - Channel names and payload types live in `src/shared/ipc.ts` so main and preload cannot drift.
 - Every main-process concern gets its own module; `src/main/index.ts` only wires lifecycle.
 
@@ -50,4 +52,11 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-Foundation only. The app boots to a splash window and proves out the security baseline, IPC bridge, build pipeline, and navigation policy. The player window, packaging, window state, tray, media keys, and PiP land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. Packaging, window state, tray, media keys, and picture-in-picture land in their own branches.
+
+## Startup sequence
+
+1. Splash window renders immediately.
+2. `components.whenReady()` installs or verifies the Widevine CDM (up to 60 seconds).
+3. The player window loads `https://www.jiohotstar.com/`, which redirects to `hotstar.com`.
+4. The splash closes once the player has painted, or an error screen replaces it if either step fails.
