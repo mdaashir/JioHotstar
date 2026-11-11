@@ -6,6 +6,7 @@ import { settingsStore } from '../store/settings.store'
 import type { WindowManager } from '../window/window.manager'
 
 const TRAY_TOOLTIP = APP_NAME
+const NOTICE_DURATION_MS = 4000
 
 function trayIconPath(): string {
   if (app.isPackaged) {
@@ -15,9 +16,22 @@ function trayIconPath(): string {
   return join(app.getAppPath(), 'resources', 'tray-icon.png')
 }
 
+function pictureInPictureNotice(status: string): string | null {
+  if (status === 'no-video') {
+    return 'Start a video, then try picture-in-picture again'
+  }
+
+  if (status === 'unsupported' || status === 'failed') {
+    return 'Picture-in-picture is not available for this video'
+  }
+
+  return null
+}
+
 export class TrayService {
   private tray: Tray | null = null
   private readonly windows: WindowManager
+  private noticeTimer: ReturnType<typeof setTimeout> | undefined
 
   constructor(windows: WindowManager) {
     this.windows = windows
@@ -39,6 +53,26 @@ export class TrayService {
     this.refresh()
   }
 
+  notifyPictureInPicture(status: string): void {
+    const message = pictureInPictureNotice(status)
+
+    if (message === null || this.tray === null || this.tray.isDestroyed()) {
+      return
+    }
+
+    this.tray.setToolTip(message)
+
+    if (this.noticeTimer !== undefined) {
+      clearTimeout(this.noticeTimer)
+    }
+
+    this.noticeTimer = setTimeout(() => {
+      if (this.tray !== null && !this.tray.isDestroyed()) {
+        this.tray.setToolTip(TRAY_TOOLTIP)
+      }
+    }, NOTICE_DURATION_MS)
+  }
+
   refresh(): void {
     if (this.tray === null || this.tray.isDestroyed()) {
       return
@@ -55,6 +89,12 @@ export class TrayService {
           }
         },
         { type: 'separator' },
+        {
+          label: labels.pictureInPicture,
+          click: () => {
+            this.windows.togglePictureInPicture()
+          }
+        },
         {
           label: labels.fullscreen,
           click: () => {
@@ -82,6 +122,10 @@ export class TrayService {
   }
 
   destroy(): void {
+    if (this.noticeTimer !== undefined) {
+      clearTimeout(this.noticeTimer)
+    }
+
     if (this.tray !== null && !this.tray.isDestroyed()) {
       this.tray.destroy()
     }

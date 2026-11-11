@@ -4,6 +4,7 @@ import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
 import { isQuitting } from '../app.lifecycle'
+import { togglePictureInPicture as runPictureInPictureToggle } from '../playback/picture-in-picture.service'
 import { settingsStore } from '../store/settings.store'
 import { installWindowCommands } from './window.commands'
 import { toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
@@ -28,9 +29,14 @@ export class WindowManager {
   private playerWindow: BrowserWindow | null = null
   private failureWindow: BrowserWindow | null = null
   private onVisibilityChange: (() => void) | null = null
+  private onPictureInPicture: ((status: string) => void) | null = null
 
   setVisibilityListener(listener: () => void): void {
     this.onVisibilityChange = listener
+  }
+
+  setPictureInPictureListener(listener: (status: string) => void): void {
+    this.onPictureInPicture = listener
   }
 
   toggleFullscreen(): void {
@@ -39,6 +45,18 @@ export class WindowManager {
     if (player !== null) {
       toggleFullscreen(player)
     }
+  }
+
+  togglePictureInPicture(): void {
+    const player = this.getPlayerWindow()
+
+    if (player === null) {
+      return
+    }
+
+    void runPictureInPictureToggle(player).then((status) => {
+      this.onPictureInPicture?.(status)
+    })
   }
 
   toggleAlwaysOnTop(): boolean {
@@ -118,7 +136,11 @@ export class WindowManager {
     })
 
     applyWindowState(player)
-    installWindowCommands(player)
+    installWindowCommands(player, {
+      notifyPictureInPicture: (status) => {
+        this.onPictureInPicture?.(status)
+      }
+    })
 
     player.on('close', (event) => {
       if (isQuitting() || !settingsStore.getCloseToTray()) {
