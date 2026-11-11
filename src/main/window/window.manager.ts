@@ -4,6 +4,7 @@ import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
 import { isQuitting } from '../app.lifecycle'
+import { appIcon } from '../app.icon'
 import { togglePictureInPicture as runPictureInPictureToggle } from '../playback/picture-in-picture.service'
 import { settingsStore } from '../store/settings.store'
 import { installWindowCommands } from './window.commands'
@@ -91,6 +92,7 @@ export class WindowManager {
       show: false,
       backgroundColor: '#080b10',
       title: 'JioHotstar',
+      icon: appIcon(),
       webPreferences: {
         ...APP_WEB_PREFERENCES,
         preload: join(__dirname, '../preload/index.js'),
@@ -128,6 +130,7 @@ export class WindowManager {
       show: false,
       backgroundColor: '#000000',
       title: 'JioHotstar',
+      icon: appIcon(),
       autoHideMenuBar: true,
       webPreferences: {
         ...APP_WEB_PREFERENCES,
@@ -189,6 +192,7 @@ export class WindowManager {
         maximizable: false,
         title: 'JioHotstar',
         backgroundColor: '#080b10',
+        icon: appIcon(),
         webPreferences: {
           ...APP_WEB_PREFERENCES,
           preload: join(__dirname, '../preload/index.js'),

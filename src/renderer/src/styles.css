@@ -51,11 +51,11 @@ body {
 }
 
 .brand-mark {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #4f8dff, var(--accent));
-  box-shadow: 0 0 18px rgba(47, 107, 255, 0.55);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(120, 90, 255, 0.45));
 }
 
 h1 {

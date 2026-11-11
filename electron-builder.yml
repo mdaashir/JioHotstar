@@ -18,21 +18,27 @@ files:
   - '!**/*.map'
 
 extraResources:
+  - from: resources/icon.png
+    to: icon.png
   - from: resources/tray-icon.png
     to: tray-icon.png
 
 win:
+  icon: build/icon.png
   target:
     - target: nsis
       arch:
         - x64
 
 nsis:
+  installerIcon: build/icon.png
+  uninstallerIcon: build/icon.png
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
 
 mac:
+  icon: build/icon.png
   target:
     - target: dmg
       arch:
@@ -44,6 +50,7 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
 
 linux:
+  icon: build/icon.png
   target:
     - target: AppImage
       arch:
