@@ -37,7 +37,7 @@ npm run dev
 ## Architecture
 
 ```
-src/main/       main process — window, IPC handlers, playback, startup, guards
+src/main/       main process — window, IPC handlers, playback, startup, settings, guards
 src/preload/    contextBridge surface only, no business logic
 src/renderer/   React UI for local windows (splash, error screen, eventually settings)
 src/shared/     IPC contracts, constants, and pure policies
@@ -49,6 +49,12 @@ src/shared/     IPC contracts, constants, and pure policies
 - Permissions are denied by default; only `fullscreen` and `mediaKeySystem` are granted.
 - Channel names and payload types live in `src/shared/ipc.ts` so main and preload cannot drift.
 - Every main-process concern gets its own module; `src/main/index.ts` only wires lifecycle.
+
+## Preferences
+
+Window geometry is persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Only the player window's size, position, and maximized state are stored.
+
+Saved bounds are validated on read: values that are malformed are discarded, sizes are clamped to the minimum window size and the primary display, and a window that would land off-screen (for example after a monitor is unplugged) is re-centred instead. Nothing about the account, the session, or playback is ever written to settings.
 
 ## Packaging
 
@@ -68,7 +74,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. Windows installers build and the packaged app opens the player. Window state, tray, media keys, and picture-in-picture land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state. Windows installers build and the packaged app opens the player. Tray, media keys, and picture-in-picture land in their own branches.
 
 ## Startup sequence
 
