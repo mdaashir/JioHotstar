@@ -1,4 +1,5 @@
-export type WindowCommand = 'toggle-fullscreen' | 'toggle-always-on-top'
+export type WindowCommand =
+  'toggle-fullscreen' | 'toggle-always-on-top' | 'toggle-picture-in-picture'
 
 export interface KeyInput {
   readonly type: string
@@ -32,6 +33,10 @@ export function matchWindowCommand(
       return 'toggle-always-on-top'
     }
 
+    if (input.meta && input.shift && !input.control && !input.alt && key === 'p') {
+      return 'toggle-picture-in-picture'
+    }
+
     return null
   }
 
@@ -41,6 +46,10 @@ export function matchWindowCommand(
 
   if (input.control && input.shift && !input.alt && !input.meta && key === 't') {
     return 'toggle-always-on-top'
+  }
+
+  if (input.control && input.shift && !input.alt && !input.meta && key === 'p') {
+    return 'toggle-picture-in-picture'
   }
 
   return null

@@ -38,22 +38,33 @@ npm run dev
 
 Handled in the main process, so no page injection is involved. A shortcut is consumed only when it matches exactly; everything else reaches the site untouched.
 
-| Action        | Windows / Linux    | macOS             |
-| ------------- | ------------------ | ----------------- |
-| Fullscreen    | `F11`              | `Ctrl` `Cmd` `F`  |
-| Always on top | `Ctrl` `Shift` `T` | `Cmd` `Shift` `T` |
+| Action             | Windows / Linux    | macOS             |
+| ------------------ | ------------------ | ----------------- |
+| Fullscreen         | `F11`              | `Ctrl` `Cmd` `F`  |
+| Always on top      | `Ctrl` `Shift` `T` | `Cmd` `Shift` `T` |
+| Picture-in-picture | `Ctrl` `Shift` `P` | `Cmd` `Shift` `P` |
 
-These combinations avoid collisions with the site's own bindings: plain `F11` and `Ctrl+Shift+T` are not used by JioHotstar, whereas `Ctrl+T` and `Ctrl+F` are browser or in-page actions we leave alone.
+These combinations avoid collisions with the site's own bindings: plain `F11`, `Ctrl+Shift+T`, and `Ctrl+Shift+P` are not used by JioHotstar, whereas `Ctrl+T`, `Ctrl+F`, and `Ctrl+P` are browser or in-page actions we leave alone.
 
 Always-on-top is remembered across launches. Because it would otherwise be invisible state, the window title gains a `— Always on top` suffix while it is off. Only the native title bar text changes; the page and its `document.title` are never modified.
 
 ## Tray
 
-A tray icon is created at startup with a menu offering Open, Toggle fullscreen, Keep on top (a checkbox reflecting the real state), and Exit. Clicking the icon restores and focuses the window.
+A tray icon is created at startup with a menu offering Open, Picture-in-picture, Toggle fullscreen, Keep on top (a checkbox reflecting the real state), and Exit. Clicking the icon restores and focuses the window.
 
 Closing the player hides it to the tray instead of quitting; the app stays alive so playback and the session are preserved. Quitting is always possible from the tray's Exit item, which sets a `before-quit` flag so the close handler stops intercepting. Setting `closeToTray` to `false` in `settings.json` restores plain close-quits behaviour.
 
 The tray icon is a generic play mark drawn by `scripts/generate-tray-icon.mjs`, not JioHotstar's logo — using their brand marks would be a licensing question, so the icon stays deliberately neutral and can be replaced when real assets exist.
+
+## Picture-in-picture
+
+Uses Chromium's native video PiP, so the floating window is the operating system's own — draggable, resizable, and kept above other windows by the platform. Available from the tray menu and from `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS); one action toggles in and out.
+
+The toggle runs a small read-only script in the player page, injected with Electron's `userGesture` flag because `requestPictureInPicture` requires user activation. It picks the largest playing video, exits first if already in PiP, and never modifies the page or fetches anything.
+
+If there is nothing to play, or the video refuses PiP, the tray tooltip reports it briefly rather than failing silently. There is no on-page toast, because injecting UI into DRM content is exactly what this app avoids.
+
+**Document PiP is not usable here.** `documentPictureInPicture` exists on `window` in Electron but rejects with `InvalidStateError: no window`, since there is no Chromium compositor overlay to host it. Video PiP is unaffected and is what this feature relies on.
 
 ## Architecture
 
@@ -95,7 +106,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen and always-on-top from the keyboard, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys and picture-in-picture land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen, always-on-top, and native picture-in-picture from the keyboard, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys land in their own branch.
 
 ## Startup sequence
 

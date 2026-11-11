@@ -1,9 +1,14 @@
 import type { BrowserWindow, Event } from 'electron'
 import { matchWindowCommand } from '../../shared/window-commands'
 import { settingsStore } from '../store/settings.store'
+import { togglePictureInPicture } from '../playback/picture-in-picture.service'
 import { applyPinnedTitle, toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
 
-export function installWindowCommands(window: BrowserWindow): void {
+export interface WindowCommandHooks {
+  notifyPictureInPicture(status: string): void
+}
+
+export function installWindowCommands(window: BrowserWindow, hooks: WindowCommandHooks): void {
   window.webContents.on('page-title-updated', (event, title) => {
     event.preventDefault()
     window.setTitle(title)
@@ -34,7 +39,14 @@ export function installWindowCommands(window: BrowserWindow): void {
       return
     }
 
-    toggleAlwaysOnTop(window)
+    if (command === 'toggle-always-on-top') {
+      toggleAlwaysOnTop(window)
+      return
+    }
+
+    void togglePictureInPicture(window).then((status) => {
+      hooks.notifyPictureInPicture(status)
+    })
   })
 
   if (settingsStore.getAlwaysOnTop()) {
