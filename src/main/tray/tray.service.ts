@@ -20,6 +20,18 @@ function pictureInPictureNotice(status: string): string | null {
   return null
 }
 
+function mediaKeyNotice(status: string): string | null {
+  if (status === 'no-video') {
+    return 'No video is playing'
+  }
+
+  if (status === 'failed') {
+    return 'The player did not respond to the media key'
+  }
+
+  return null
+}
+
 export class TrayService {
   private tray: Tray | null = null
   private readonly windows: WindowManager
@@ -46,8 +58,14 @@ export class TrayService {
   }
 
   notifyPictureInPicture(status: string): void {
-    const message = pictureInPictureNotice(status)
+    this.showNotice(pictureInPictureNotice(status))
+  }
 
+  notifyMediaKey(status: string): void {
+    this.showNotice(mediaKeyNotice(status))
+  }
+
+  private showNotice(message: string | null): void {
     if (message === null || this.tray === null || this.tray.isDestroyed()) {
       return
     }
