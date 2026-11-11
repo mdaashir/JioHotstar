@@ -34,6 +34,19 @@ npm run dev
 | `npm run dist:mac`  | Build the macOS dmg (must run on macOS)                |
 | `npm run dist:linux`| Build the Linux AppImage (must run on Linux)           |
 
+## Keyboard shortcuts
+
+Handled in the main process, so no page injection is involved. A shortcut is consumed only when it matches exactly; everything else reaches the site untouched.
+
+| Action        | Windows / Linux    | macOS             |
+| ------------- | ------------------ | ----------------- |
+| Fullscreen    | `F11`              | `Ctrl` `Cmd` `F`  |
+| Always on top | `Ctrl` `Shift` `T` | `Cmd` `Shift` `T` |
+
+These combinations avoid collisions with the site's own bindings: plain `F11` and `Ctrl+Shift+T` are not used by JioHotstar, whereas `Ctrl+T` and `Ctrl+F` are browser or in-page actions we leave alone.
+
+Always-on-top is remembered across launches. Because it would otherwise be invisible state, the window title gains a `— Always on top` suffix while it is off. Only the native title bar text changes; the page and its `document.title` are never modified.
+
 ## Architecture
 
 ```
@@ -52,9 +65,9 @@ src/shared/     IPC contracts, constants, and pure policies
 
 ## Preferences
 
-Window geometry is persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Only the player window's size, position, and maximized state are stored.
+Window geometry and the always-on-top preference are persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Nothing about the account, the session, or playback is ever written to settings.
 
-Saved bounds are validated on read: values that are malformed are discarded, sizes are clamped to the minimum window size and the primary display, and a window that would land off-screen (for example after a monitor is unplugged) is re-centred instead. Nothing about the account, the session, or playback is ever written to settings.
+Saved bounds are validated on read: values that are malformed are discarded, sizes are clamped to the minimum window size and the primary display, and a window that would land off-screen (for example after a monitor is unplugged) is re-centred instead. Bounds are not recorded while the window is fullscreen, so entering fullscreen never overwrites the restore size.
 
 ## Packaging
 
@@ -74,7 +87,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state. Windows installers build and the packaged app opens the player. Tray, media keys, and picture-in-picture land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, and supports native fullscreen and always-on-top from the keyboard. Windows installers build and the packaged app opens the player. Tray, media keys, and picture-in-picture land in their own branches.
 
 ## Startup sequence
 

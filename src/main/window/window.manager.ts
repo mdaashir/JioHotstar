@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
+import { installWindowCommands } from './window.commands'
 import { applyWindowState } from './window.state'
 
 const SPLASH_WIDTH = 460
@@ -87,6 +88,7 @@ class WindowManager {
     })
 
     applyWindowState(player)
+    installWindowCommands(player)
 
     player.once('ready-to-show', () => {
       player.show()

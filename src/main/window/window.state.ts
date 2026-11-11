@@ -38,7 +38,7 @@ export function applyWindowState(window: BrowserWindow): void {
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const persist = (): void => {
-    if (window.isDestroyed()) {
+    if (window.isDestroyed() || window.isFullScreen()) {
       return
     }
 
