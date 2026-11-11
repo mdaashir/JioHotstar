@@ -1,6 +1,7 @@
 import type { JSX } from 'react'
 import type { StartupFailure } from '../../shared/startup'
 import { PlaybackError } from './views/PlaybackError'
+import { Settings } from './views/Settings'
 import { Splash } from './views/Splash'
 
 interface Route {
@@ -24,6 +25,10 @@ export function App(): JSX.Element {
 
   if (route.path === '/error') {
     return <PlaybackError reason={route.reason} />
+  }
+
+  if (route.path === '/settings') {
+    return <Settings />
   }
 
   return <Splash />

@@ -37,6 +37,10 @@ if (!hasSingleInstanceLock) {
     trayService.refresh()
   })
 
+  windowManager.setSettingsListener(() => {
+    trayService.refresh()
+  })
+
   app.on('before-quit', () => {
     markQuitting()
     releaseMediaKeys()

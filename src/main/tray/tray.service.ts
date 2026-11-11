@@ -131,6 +131,13 @@ export class TrayService {
         },
         { type: 'separator' },
         {
+          label: labels.settings,
+          click: () => {
+            this.windows.openSettingsWindow()
+          }
+        },
+        { type: 'separator' },
+        {
           label: labels.quit,
           click: () => {
             app.quit()
