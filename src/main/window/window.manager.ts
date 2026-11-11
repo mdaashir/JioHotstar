@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
+import type { MediaKeyStatus } from '../../shared/media-keys'
 import { isQuitting } from '../app.lifecycle'
 import { appIcon } from '../app.icon'
 import { togglePictureInPicture as runPictureInPictureToggle } from '../playback/picture-in-picture.service'
@@ -32,6 +33,7 @@ export class WindowManager {
   private failureWindow: BrowserWindow | null = null
   private onVisibilityChange: (() => void) | null = null
   private onPictureInPicture: ((status: string) => void) | null = null
+  private onMediaKeyNotice: ((status: MediaKeyStatus) => void) | null = null
   private scrollbars: ScrollbarController | null = null
 
   setVisibilityListener(listener: () => void): void {
@@ -40,6 +42,14 @@ export class WindowManager {
 
   setPictureInPictureListener(listener: (status: string) => void): void {
     this.onPictureInPicture = listener
+  }
+
+  setMediaKeyListener(listener: (status: MediaKeyStatus) => void): void {
+    this.onMediaKeyNotice = listener
+  }
+
+  notifyMediaKey(status: MediaKeyStatus): void {
+    this.onMediaKeyNotice?.(status)
   }
 
   toggleScrollbars(): boolean {

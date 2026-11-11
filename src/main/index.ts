@@ -3,6 +3,7 @@ import { APP_ID, APP_NAME } from '../shared/constants'
 import { markQuitting } from './app.lifecycle'
 import { appIcon } from './app.icon'
 import { registerIpcHandlers } from './ipc/ipc.registry'
+import { installMediaKeys, releaseMediaKeys } from './playback/media-keys.service'
 import { installNavigationGuards } from './security/navigation.guard'
 import { installPermissionPolicy } from './security/permission.policy'
 import { startup } from './startup/startup'
@@ -38,6 +39,7 @@ if (!hasSingleInstanceLock) {
 
   app.on('before-quit', () => {
     markQuitting()
+    releaseMediaKeys()
   })
 
   app.on('second-instance', () => {
@@ -55,6 +57,12 @@ if (!hasSingleInstanceLock) {
     trayService.create()
 
     await startup.start()
+
+    installMediaKeys(() => windowManager.getPlayerWindow(), {
+      notify: (status) => {
+        windowManager.notifyMediaKey(status)
+      }
+    })
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
