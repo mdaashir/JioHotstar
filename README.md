@@ -29,6 +29,10 @@ npm run dev
 | `npm start`         | Preview the built app                                  |
 | `npm run verify`    | Lint, type-check, unit test, and build                 |
 | `npm run test:e2e`  | Build, then launch the app with Playwright             |
+| `npm run package`   | Build an unpacked app into `release/win-unpacked`      |
+| `npm run dist:win`  | Build the Windows NSIS installer                       |
+| `npm run dist:mac`  | Build the macOS dmg (must run on macOS)                |
+| `npm run dist:linux`| Build the Linux AppImage (must run on Linux)           |
 
 ## Architecture
 
@@ -46,13 +50,25 @@ src/shared/     IPC contracts, constants, and pure policies
 - Channel names and payload types live in `src/shared/ipc.ts` so main and preload cannot drift.
 - Every main-process concern gets its own module; `src/main/index.ts` only wires lifecycle.
 
+## Packaging
+
+`electron-builder` packages the ECS build, not stock Electron: `electronDist` points at `node_modules/electron/dist`, so whatever `npm` installed is what ships. The side effect is that a build only works on the platform matching that installed distribution — cross-platform builds would need the `electronDownload` mirror mode instead. CI would have to install the matching ECS distribution per runner.
+
+Artifacts land in `release/`, which is git-ignored.
+
+- **Unsigned.** No certificate is configured, so Windows SmartScreen warns and macOS Gatekeeper blocks. Signing and notarization are not set up.
+- **Default icon.** No application icon is supplied, so the Electron icon is used. Brand assets are a deliberate open decision, not an oversight.
+- **macOS entitlements.** `build/entitlements.mac.plist` disables library validation; without it the Widevine CDM cannot load under hardened runtime.
+- **No auto-update.** There is no publish target or signing identity yet, so `electron-updater` is not wired in.
+- Only `out/` and `package.json` are packed. React lives in devDependencies because Vite bundles it into the renderer, which keeps the asar at roughly 660 kB instead of 9 MB.
+
 ## Electron build
 
 The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-releases) Electron build pinned to `v45.2.1+wvcus`, which supplies the Widevine CDM needed for playback. This build is VMP-signed for development only; production distribution would require castlabs EVS signing.
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. Packaging, window state, tray, media keys, and picture-in-picture land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. Windows installers build and the packaged app opens the player. Window state, tray, media keys, and picture-in-picture land in their own branches.
 
 ## Startup sequence
 
