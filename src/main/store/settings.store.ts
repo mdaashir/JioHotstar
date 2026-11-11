@@ -1,4 +1,5 @@
 import Store from 'electron-store'
+import type { SettingsSnapshot } from '../../shared/settings'
 import { isWindowState, type WindowState } from '../../shared/window-state'
 
 interface SettingsSchema {
@@ -6,9 +7,16 @@ interface SettingsSchema {
   alwaysOnTop?: boolean
   closeToTray?: boolean
   hideScrollbars?: boolean
+  rememberWindowState?: boolean
 }
 
 const store = new Store<SettingsSchema>({ name: 'settings' })
+
+function readBoolean(key: keyof SettingsSchema, fallback: boolean): boolean {
+  const value: unknown = store.get(key)
+
+  return typeof value === 'boolean' ? value : fallback
+}
 
 export const settingsStore = {
   getWindowState(): WindowState | null {
@@ -22,7 +30,7 @@ export const settingsStore = {
   },
 
   getAlwaysOnTop(): boolean {
-    return store.get('alwaysOnTop') === true
+    return readBoolean('alwaysOnTop', false)
   },
 
   setAlwaysOnTop(alwaysOnTop: boolean): void {
@@ -30,9 +38,7 @@ export const settingsStore = {
   },
 
   getCloseToTray(): boolean {
-    const value: unknown = store.get('closeToTray')
-
-    return value === undefined ? true : value === true
+    return readBoolean('closeToTray', true)
   },
 
   setCloseToTray(closeToTray: boolean): void {
@@ -40,12 +46,27 @@ export const settingsStore = {
   },
 
   getHideScrollbars(): boolean {
-    const value: unknown = store.get('hideScrollbars')
-
-    return value === undefined ? true : value === true
+    return readBoolean('hideScrollbars', true)
   },
 
   setHideScrollbars(hideScrollbars: boolean): void {
     store.set('hideScrollbars', hideScrollbars)
+  },
+
+  getRememberWindowState(): boolean {
+    return readBoolean('rememberWindowState', true)
+  },
+
+  setRememberWindowState(rememberWindowState: boolean): void {
+    store.set('rememberWindowState', rememberWindowState)
+  },
+
+  snapshot(): SettingsSnapshot {
+    return {
+      alwaysOnTop: readBoolean('alwaysOnTop', false),
+      closeToTray: readBoolean('closeToTray', true),
+      hideScrollbars: readBoolean('hideScrollbars', true),
+      rememberWindowState: readBoolean('rememberWindowState', true)
+    }
   }
 }

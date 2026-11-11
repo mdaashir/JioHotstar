@@ -4,6 +4,7 @@ export interface TrayLabels {
   readonly fullscreen: string
   readonly alwaysOnTop: string
   readonly hideScrollbars: string
+  readonly settings: string
   readonly quit: string
 }
 
@@ -14,6 +15,7 @@ export function trayLabels(alwaysOnTop: boolean, isMac: boolean): TrayLabels {
     fullscreen: 'Toggle fullscreen',
     alwaysOnTop: alwaysOnTop ? 'Unpin from top' : 'Keep on top',
     hideScrollbars: 'Hide scrollbars',
+    settings: isMac ? 'Settings…' : 'Settings...',
     quit: isMac ? 'Quit JioHotstar' : 'Exit'
   }
 }

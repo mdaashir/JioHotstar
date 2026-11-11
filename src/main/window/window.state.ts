@@ -13,14 +13,13 @@ const SAVE_DEBOUNCE_MS = 400
 function workAreasInDisplayOrder(): WorkArea[] {
   const primary = screen.getPrimaryDisplay()
 
-  return [
-    primary,
-    ...screen.getAllDisplays().filter((display) => display.id !== primary.id)
-  ].map((display) => display.workArea)
+  return [primary, ...screen.getAllDisplays().filter((display) => display.id !== primary.id)].map(
+    (display) => display.workArea
+  )
 }
 
 export function applyWindowState(window: BrowserWindow): void {
-  const saved = settingsStore.getWindowState()
+  const saved = settingsStore.getRememberWindowState() ? settingsStore.getWindowState() : null
 
   if (saved !== null) {
     const bounds = resolveWindowBounds(saved, workAreasInDisplayOrder(), {
@@ -39,6 +38,10 @@ export function applyWindowState(window: BrowserWindow): void {
 
   const persist = (): void => {
     if (window.isDestroyed() || window.isFullScreen()) {
+      return
+    }
+
+    if (!settingsStore.getRememberWindowState()) {
       return
     }
 

@@ -4,13 +4,14 @@ import { PLAYER_URL } from '../../shared/constants'
 import type { StartupFailure } from '../../shared/startup'
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH } from '../../shared/window-state'
 import type { MediaKeyStatus } from '../../shared/media-keys'
+import type { SettingsSnapshot } from '../../shared/settings'
 import { isQuitting } from '../app.lifecycle'
 import { appIcon } from '../app.icon'
 import { togglePictureInPicture as runPictureInPictureToggle } from '../playback/picture-in-picture.service'
 import { settingsStore } from '../store/settings.store'
 import { installWindowCommands } from './window.commands'
 import { installScrollbarHiding, type ScrollbarController } from './scrollbar.hider'
-import { toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
+import { applyPinnedTitle, toggleAlwaysOnTop, toggleFullscreen } from './window.presentation'
 import { applyWindowState } from './window.state'
 
 const SPLASH_WIDTH = 460
@@ -19,6 +20,8 @@ const FAILURE_WIDTH = 520
 const FAILURE_HEIGHT = 400
 const PLAYER_WIDTH = 1280
 const PLAYER_HEIGHT = 800
+const SETTINGS_WIDTH = 560
+const SETTINGS_HEIGHT = 520
 
 const APP_WEB_PREFERENCES = {
   contextIsolation: true,
@@ -31,10 +34,86 @@ export class WindowManager {
   private splashWindow: BrowserWindow | null = null
   private playerWindow: BrowserWindow | null = null
   private failureWindow: BrowserWindow | null = null
+  private settingsWindow: BrowserWindow | null = null
   private onVisibilityChange: (() => void) | null = null
   private onPictureInPicture: ((status: string) => void) | null = null
   private onMediaKeyNotice: ((status: MediaKeyStatus) => void) | null = null
   private scrollbars: ScrollbarController | null = null
+  private onSettingsChanged: (() => void) | null = null
+
+  setSettingsListener(listener: () => void): void {
+    this.onSettingsChanged = listener
+  }
+
+  /**
+   * Applies an already-validated patch. Each setting has a live effect, so this
+   * is the single place where a preference becomes behaviour.
+   */
+  applySettingsPatch(patch: Partial<SettingsSnapshot>): void {
+    if (patch.alwaysOnTop !== undefined) {
+      settingsStore.setAlwaysOnTop(patch.alwaysOnTop)
+      const player = this.getPlayerWindow()
+
+      if (player !== null) {
+        player.setAlwaysOnTop(patch.alwaysOnTop)
+        applyPinnedTitle(player)
+      }
+    }
+
+    if (patch.closeToTray !== undefined) {
+      settingsStore.setCloseToTray(patch.closeToTray)
+    }
+
+    if (patch.hideScrollbars !== undefined) {
+      settingsStore.setHideScrollbars(patch.hideScrollbars)
+      this.scrollbars?.setEnabled(patch.hideScrollbars)
+    }
+
+    if (patch.rememberWindowState !== undefined) {
+      settingsStore.setRememberWindowState(patch.rememberWindowState)
+    }
+
+    this.onSettingsChanged?.()
+  }
+
+  openSettingsWindow(): BrowserWindow {
+    const existing = this.getSettingsWindow()
+
+    if (existing !== null) {
+      existing.show()
+      existing.focus()
+      return existing
+    }
+
+    const settings = new BrowserWindow({
+      width: SETTINGS_WIDTH,
+      height: SETTINGS_HEIGHT,
+      resizable: false,
+      maximizable: false,
+      title: 'JioHotstar Settings',
+      backgroundColor: '#080b10',
+      icon: appIcon(),
+      autoHideMenuBar: true,
+      webPreferences: {
+        ...APP_WEB_PREFERENCES,
+        preload: join(__dirname, '../preload/index.js'),
+        devTools: !app.isPackaged
+      }
+    })
+
+    settings.on('closed', () => {
+      this.settingsWindow = null
+    })
+
+    this.loadRenderer(settings, '/settings')
+    this.settingsWindow = settings
+
+    return settings
+  }
+
+  getSettingsWindow(): BrowserWindow | null {
+    return this.alive(this.settingsWindow)
+  }
 
   setVisibilityListener(listener: () => void): void {
     this.onVisibilityChange = listener
