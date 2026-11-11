@@ -22,17 +22,17 @@ npm run dev
 
 ## Commands
 
-| Command             | Purpose                                                |
-| ------------------- | ------------------------------------------------------ |
-| `npm run dev`       | Run the app with the Vite dev server and HMR           |
-| `npm run build`     | Build main, preload, and renderer into `out/`          |
-| `npm start`         | Preview the built app                                  |
-| `npm run verify`    | Lint, type-check, unit test, and build                 |
-| `npm run test:e2e`  | Build, then launch the app with Playwright             |
-| `npm run package`   | Build an unpacked app into `release/win-unpacked`      |
-| `npm run dist:win`  | Build the Windows NSIS installer                       |
-| `npm run dist:mac`  | Build the macOS dmg (must run on macOS)                |
-| `npm run dist:linux`| Build the Linux AppImage (must run on Linux)           |
+| Command              | Purpose                                           |
+| -------------------- | ------------------------------------------------- |
+| `npm run dev`        | Run the app with the Vite dev server and HMR      |
+| `npm run build`      | Build main, preload, and renderer into `out/`     |
+| `npm start`          | Preview the built app                             |
+| `npm run verify`     | Lint, type-check, unit test, and build            |
+| `npm run test:e2e`   | Build, then launch the app with Playwright        |
+| `npm run package`    | Build an unpacked app into `release/win-unpacked` |
+| `npm run dist:win`   | Build the Windows NSIS installer                  |
+| `npm run dist:mac`   | Build the macOS dmg (must run on macOS)           |
+| `npm run dist:linux` | Build the Linux AppImage (must run on Linux)      |
 
 ## Keyboard shortcuts
 
@@ -46,6 +46,14 @@ Handled in the main process, so no page injection is involved. A shortcut is con
 These combinations avoid collisions with the site's own bindings: plain `F11` and `Ctrl+Shift+T` are not used by JioHotstar, whereas `Ctrl+T` and `Ctrl+F` are browser or in-page actions we leave alone.
 
 Always-on-top is remembered across launches. Because it would otherwise be invisible state, the window title gains a `— Always on top` suffix while it is off. Only the native title bar text changes; the page and its `document.title` are never modified.
+
+## Tray
+
+A tray icon is created at startup with a menu offering Open, Toggle fullscreen, Keep on top (a checkbox reflecting the real state), and Exit. Clicking the icon restores and focuses the window.
+
+Closing the player hides it to the tray instead of quitting; the app stays alive so playback and the session are preserved. Quitting is always possible from the tray's Exit item, which sets a `before-quit` flag so the close handler stops intercepting. Setting `closeToTray` to `false` in `settings.json` restores plain close-quits behaviour.
+
+The tray icon is a generic play mark drawn by `scripts/generate-tray-icon.mjs`, not JioHotstar's logo — using their brand marks would be a licensing question, so the icon stays deliberately neutral and can be replaced when real assets exist.
 
 ## Architecture
 
@@ -65,7 +73,7 @@ src/shared/     IPC contracts, constants, and pure policies
 
 ## Preferences
 
-Window geometry and the always-on-top preference are persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Nothing about the account, the session, or playback is ever written to settings.
+Window geometry, always-on-top, and close-to-tray are persisted with `electron-store` in `<userData>/settings.json`, behind `src/main/store/settings.store.ts`. Nothing about the account, the session, or playback is ever written to settings.
 
 Saved bounds are validated on read: values that are malformed are discarded, sizes are clamped to the minimum window size and the primary display, and a window that would land off-screen (for example after a monitor is unplugged) is re-centred instead. Bounds are not recorded while the window is fullscreen, so entering fullscreen never overwrites the restore size.
 
@@ -87,7 +95,7 @@ The project depends on the [Castlabs ECS](https://github.com/castlabs/electron-r
 
 ## Status
 
-The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, and supports native fullscreen and always-on-top from the keyboard. Windows installers build and the packaged app opens the player. Tray, media keys, and picture-in-picture land in their own branches.
+The app opens a splash window, prepares the Widevine component, then hands off to the JioHotstar player. Navigation is allow-listed, popups share the same guarded policy, and failed loads fall back to a local screen with a retry action. The player window remembers its size, position, and maximized state, supports native fullscreen and always-on-top from the keyboard, and lives in the system tray with close-to-tray behaviour. Windows installers build and the packaged app opens the player. Media keys and picture-in-picture land in their own branches.
 
 ## Startup sequence
 
