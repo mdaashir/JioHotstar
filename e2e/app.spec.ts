@@ -1,13 +1,34 @@
 import { _electron as electron, expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
-test('launches the splash window with a working preload bridge', async () => {
+test('opens the JioHotstar player', async () => {
+  test.setTimeout(120_000)
+
   const app = await electron.launch({ args: ['.'] })
 
-  const window = await app.firstWindow()
+  try {
+    let player: Page | null = null
+    const deadline = Date.now() + 90_000
 
-  await expect(window).toHaveTitle('JioHotstar')
-  await expect(window.getByTestId('app-name')).toHaveText('JioHotstar')
-  await expect(window.getByTestId('status')).toContainText('v0.1.0')
+    while (player === null && Date.now() < deadline) {
+      for (const candidate of app.windows()) {
+        if (candidate.url().includes('hotstar.com')) {
+          player = candidate
+          break
+        }
+      }
 
-  await app.close()
+      if (player === null) {
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+    }
+
+    if (player === null) {
+      throw new Error('The player window did not open')
+    }
+
+    await expect(player).toHaveTitle(/JioHotstar/)
+  } finally {
+    await app.close()
+  }
 })
