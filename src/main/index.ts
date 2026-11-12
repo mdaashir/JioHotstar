@@ -4,6 +4,7 @@ import { markQuitting } from './app.lifecycle'
 import { appIcon } from './app.icon'
 import { registerIpcHandlers } from './ipc/ipc.registry'
 import { installMediaKeys, releaseMediaKeys } from './playback/media-keys.service'
+import { applyDnsFilter } from './security/dns.filter'
 import { installNavigationGuards } from './security/navigation.guard'
 import { installPermissionPolicy } from './security/permission.policy'
 import { startup } from './startup/startup'
@@ -56,6 +57,10 @@ if (!hasSingleInstanceLock) {
   })
 
   void app.whenReady().then(async () => {
+    // Must run before any window is created: configureHostResolver is
+    // process-wide and only affects resolutions made after it is applied.
+    applyDnsFilter()
+
     installPermissionPolicy(session.defaultSession)
     registerIpcHandlers()
 

@@ -3,6 +3,7 @@ export interface SettingsSnapshot {
   readonly closeToTray: boolean
   readonly hideScrollbars: boolean
   readonly rememberWindowState: boolean
+  readonly dnsFilter: boolean
 }
 
 export type SettingsKey = keyof SettingsSnapshot
@@ -11,7 +12,8 @@ export const SETTINGS_KEYS: ReadonlyArray<SettingsKey> = [
   'alwaysOnTop',
   'closeToTray',
   'hideScrollbars',
-  'rememberWindowState'
+  'rememberWindowState',
+  'dnsFilter'
 ]
 
 /**
@@ -48,6 +50,8 @@ export interface SettingsLabels {
   readonly hideScrollbarsHint: string
   readonly rememberWindowState: string
   readonly rememberWindowStateHint: string
+  readonly dnsFilter: string
+  readonly dnsFilterHint: string
 }
 
 export const SETTINGS_LABELS: SettingsLabels = {
@@ -61,5 +65,8 @@ export const SETTINGS_LABELS: SettingsLabels = {
   hideScrollbars: 'Hide scrollbars',
   hideScrollbarsHint: 'Scrolling still works; the bar is just hidden.',
   rememberWindowState: 'Remember window size and position',
-  rememberWindowStateHint: 'Reopens where you left it. Re-centres if the display is gone.'
+  rememberWindowStateHint: 'Reopens where you left it. Re-centres if the display is gone.',
+  dnsFilter: 'Block third-party trackers (AdGuard DNS)',
+  dnsFilterHint:
+    'Routes app DNS through AdGuard. Blocks third-party ad and tracker domains, not JioHotstar’s own advertising. Takes effect after restarting the app.'
 }

@@ -28,6 +28,11 @@ const ROWS: ReadonlyArray<SettingRow> = [
     key: 'rememberWindowState',
     label: SETTINGS_LABELS.rememberWindowState,
     hint: SETTINGS_LABELS.rememberWindowStateHint
+  },
+  {
+    key: 'dnsFilter',
+    label: SETTINGS_LABELS.dnsFilter,
+    hint: SETTINGS_LABELS.dnsFilterHint
   }
 ]
 

@@ -8,6 +8,7 @@ interface SettingsSchema {
   closeToTray?: boolean
   hideScrollbars?: boolean
   rememberWindowState?: boolean
+  dnsFilter?: boolean
 }
 
 const store = new Store<SettingsSchema>({ name: 'settings' })
@@ -61,12 +62,26 @@ export const settingsStore = {
     store.set('rememberWindowState', rememberWindowState)
   },
 
+  /**
+   * Off by default. Enabling it routes all app DNS through AdGuard, which
+   * removes third-party trackers but cannot block the player's own advertising,
+   * and carries a real risk of blocking a domain the site depends on.
+   */
+  getDnsFilter(): boolean {
+    return readBoolean('dnsFilter', false)
+  },
+
+  setDnsFilter(dnsFilter: boolean): void {
+    store.set('dnsFilter', dnsFilter)
+  },
+
   snapshot(): SettingsSnapshot {
     return {
       alwaysOnTop: readBoolean('alwaysOnTop', false),
       closeToTray: readBoolean('closeToTray', true),
       hideScrollbars: readBoolean('hideScrollbars', true),
-      rememberWindowState: readBoolean('rememberWindowState', true)
+      rememberWindowState: readBoolean('rememberWindowState', true),
+      dnsFilter: readBoolean('dnsFilter', false)
     }
   }
 }
