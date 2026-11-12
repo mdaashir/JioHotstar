@@ -67,25 +67,28 @@ throwaway accounts and do not re-sign when an existing signature is still valid.
 
 ### Creating the account — once, by hand
 
-Account creation is one-time, so it is not automated here. It needs Python, since
-`castlabs-evs` is a pip package. That is not present on this machine by default:
-`python` on Windows resolves to the Microsoft Store stub and WSL has no `python3`, so
-install Python 3.12 from python.org first.
+Account creation is one-time, so it is not automated here. Use **uv**, which installs
+the client and its own Python without touching the system: this machine has no real
+`python` (`python` resolves to the Microsoft Store stub, and WSL has no `python3`).
 
 ```bash
-python -m pip install --upgrade castlabs-evs
+# Installs castlabs-evs into an isolated environment, with its own Python.
+uv tool install castlabs-evs
 
 # Creates the account. Castlabs email a confirmation code.
-python -m castlabs_evs.account signup \
+uvx --from castlabs-evs evs-account signup \
   -A "<your-username>" \
   -P "<your-password>" \
   -E "s.mohamedaashir@gmail.com" \
   -F "JioHotstar" -L "Desktop" -O "JioHotstar Desktop"
 
 # Completes it, using the code from that email.
-python -m castlabs_evs.account confirm-signup \
+uvx --from castlabs-evs evs-account confirm-signup \
   -A "<your-username>" -P "<your-password>" -C "<code>"
 ```
+
+Or just run `uvx --from castlabs-evs evs-account signup` with no flags and answer the
+prompts — it caches your answers for the confirm step.
 
 Then add two repository secrets (Settings → Secrets and variables → Actions):
 
@@ -100,6 +103,14 @@ release.
 Signup is free but the account is not disposable — castlabs ask that nobody creates
 throwaway accounts, and that builds are not re-signed while an existing signature is
 still valid.
+
+To check it worked, or to sign a build by hand:
+
+```bash
+uvx --from castlabs-evs evs-vmp sign-pkg release/win-unpacked
+```
+
+`sign-pkg` takes `-A`/`-P` and **no `--no-ask`** — only `evs-account` has that flag.
 
 ### Where signing happens, and why it is a hook
 

@@ -20,6 +20,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Notes
 
+- **VMP signing needs no system Python.** The `afterPack` hook tries `uv run
+--with castlabs-evs`, then `python`, then `python3`, so the same code works in CI
+  (which has `python` from setup-python) and on a machine with only uv. Account
+  creation is a one-time `uv tool install castlabs-evs` plus two commands — see
+  [docs/signing.md](docs/signing.md).
 - **32-bit builds are impossible, not skipped.** Castlabs publishes no `ia32`
   Electron for any platform, and the 32-bit line would mean Electron ≤43 without
   Widevine. See [docs/packaging-architectures.md](docs/packaging-architectures.md).
