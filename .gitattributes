@@ -1,0 +1,13 @@
+# Normalise line endings in the repository. Prettier's `endOfLine` is `lf` and
+# .editorconfig declares `lf`, but `core.autocrlf=true` on Windows would check
+# files out as CRLF and make `format:check` fail for reasons unrelated to code.
+* text=auto eol=lf
+
+# Windows-only shell scripts and batch files keep CRLF if they ever appear.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets must never be normalised.
+*.png binary
+*.ico binary
+*.icns binary

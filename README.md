@@ -12,6 +12,7 @@ A native desktop shell around the official JioHotstar web player. The app owns t
 
 - Node.js 22 or newer
 - npm (the ECS Electron build installs from a GitHub tag, not the npm registry)
+- LF line endings. `.gitattributes` enforces them and Prettier is pinned to `lf`, so a Windows checkout with `core.autocrlf=true` will report formatting failures that are line endings, not code. Run `git config core.autocrlf false` in this repo.
 
 ## Getting started
 
@@ -27,7 +28,7 @@ npm run dev
 | `npm run dev`        | Run the app with the Vite dev server and HMR      |
 | `npm run build`      | Build main, preload, and renderer into `out/`     |
 | `npm start`          | Preview the built app                             |
-| `npm run verify`     | Lint, type-check, unit test, and build            |
+| `npm run verify`     | Format, lint, type-check, unit test, and build    |
 | `npm run test:e2e`   | Build, then launch the app with Playwright        |
 | `npm run package`    | Build an unpacked app into `release/win-unpacked` |
 | `npm run dist:win`   | Build the Windows NSIS installer                  |

@@ -43,12 +43,14 @@ test('restores the player window bounds across launches', async () => {
   try {
     await waitForPlayerWindow(second)
 
-    await expect.poll(async () => readPlayerBounds(second)).toEqual({
-      x: 140,
-      y: 110,
-      width: 1040,
-      height: 680
-    })
+    await expect
+      .poll(async () => readPlayerBounds(second))
+      .toEqual({
+        x: 140,
+        y: 110,
+        width: 1040,
+        height: 680
+      })
   } finally {
     await second.close()
   }
