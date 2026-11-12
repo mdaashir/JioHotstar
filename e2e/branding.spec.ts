@@ -8,9 +8,15 @@ import { join } from 'node:path'
  *
  * The splash is destroyed as soon as the player paints, and on a fast runner
  * `firstWindow()` can already be the player, so asserting against whichever
- * window the app happens to own is inherently racy. This opens a window on the
- * splash route itself, with the real preload, which is deterministic.
+ * window the app happens to own is inherently racy.
+ *
+ * This opens its own window on the splash route. It carries a unique query
+ * string because the app's own splash loads the same `index.html` — matching on
+ * the path alone would sometimes select that window, then fail when the app
+ * destroyed it.
  */
+const PROBE_MARKER = '?e2e=branding-probe'
+
 test('ships the branded icon in the splash and the app icon', async () => {
   test.setTimeout(120_000)
 
@@ -18,7 +24,7 @@ test('ships the branded icon in the splash and the app icon', async () => {
   const app = await electron.launch({ args: ['.', `--user-data-dir=${userDataDir}`] })
 
   try {
-    await app.evaluate(async ({ BrowserWindow, app: electronApp }) => {
+    await app.evaluate(async ({ BrowserWindow, app: electronApp }, marker) => {
       const splash = new BrowserWindow({
         width: 460,
         height: 320,
@@ -32,12 +38,24 @@ test('ships the branded icon in the splash and the app icon', async () => {
         }
       })
 
-      await splash.loadFile(`${electronApp.getAppPath()}/out/renderer/index.html`)
-    })
+      await splash.loadFile(`${electronApp.getAppPath()}/out/renderer/index.html`, {
+        search: marker
+      })
+    }, PROBE_MARKER)
 
-    const splash = app.windows().find((window) => window.url().includes('index.html'))
+    let splash
 
-    expect(splash).toBeDefined()
+    for (const deadline = Date.now() + 20_000; Date.now() < deadline;) {
+      splash = app.windows().find((page) => page.url().includes(PROBE_MARKER))
+
+      if (splash !== undefined) {
+        break
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+
+    expect(splash, 'a window on the splash route').toBeDefined()
 
     await splash?.waitForSelector('img.brand-mark', { state: 'attached', timeout: 20_000 })
 
