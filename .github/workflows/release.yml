@@ -114,6 +114,10 @@ jobs:
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
+      # `--publish never` is in the npm script. Without it electron-builder
+      # detects the GitHub remote and tries to publish the release itself, which
+      # fails on a runner with no token — and would compete with the dedicated
+      # publish job below. Building and publishing are kept separate on purpose.
       - name: Build ${{ matrix.artifact }} installer
         run: npm run dist:${{ matrix.target }}
 
