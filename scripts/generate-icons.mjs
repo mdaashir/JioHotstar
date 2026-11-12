@@ -216,6 +216,43 @@ function largestIcoFrame(icoBuffer) {
   return decodePng(best.data)
 }
 
+/**
+ * Writes a real multi-size .ico containing PNG-compressed frames.
+ *
+ * NSIS requires a genuine ICO for `installerIcon`, not a PNG — passing a PNG
+ * fails with "invalid icon file". Unlike the older BITMAPINFO layout, PNG frames
+ * are supported by Windows Vista and later and are what the source asset uses.
+ */
+function encodeIco(frames) {
+  const count = frames.length
+  const header = Buffer.alloc(6)
+  header.writeUInt16LE(0, 0)
+  header.writeUInt16LE(1, 2)
+  header.writeUInt16LE(count, 4)
+
+  const directory = Buffer.alloc(16 * count)
+  const images = []
+  let offset = 6 + directory.length
+
+  frames.forEach((frame, index) => {
+    const entry = index * 16
+
+    directory[entry] = frame.size >= 256 ? 0 : frame.size
+    directory[entry + 1] = frame.size >= 256 ? 0 : frame.size
+    directory[entry + 2] = 0
+    directory[entry + 3] = 0
+    directory.writeUInt16LE(1, entry + 4)
+    directory.writeUInt16LE(32, entry + 6)
+    directory.writeUInt32LE(frame.png.length, entry + 8)
+    directory.writeUInt32LE(offset, entry + 12)
+
+    offset += frame.png.length
+    images.push(frame.png)
+  })
+
+  return Buffer.concat([header, directory, ...images])
+}
+
 const master = largestIcoFrame(readFileSync(SOURCE))
 
 for (const output of OUTPUTS) {
@@ -226,3 +263,15 @@ for (const output of OUTPUTS) {
   writeFileSync(target, encodePng(resized.width, resized.height, resized.pixels))
   console.log(`${output.path} (${output.size}x${output.size})`)
 }
+
+// NSIS and Windows Explorer want an ICO, and an installer icon needs several
+// sizes so it stays sharp in the taskbar, Start menu, and file listing.
+const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
+const icoFrames = ICO_SIZES.map((size) => ({
+  size,
+  png: encodePng(size, size, resample(master, size).pixels)
+}))
+
+const icoPath = join(process.cwd(), 'build', 'icon.ico')
+writeFileSync(icoPath, encodeIco(icoFrames))
+console.log(`build/icon.ico (${ICO_SIZES.join(', ')})`)
