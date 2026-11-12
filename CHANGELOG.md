@@ -6,6 +6,46 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-12
+
+**The first release that can update itself.** `v0.1.2` shipped before the updater
+existed, so an installed 0.1.2 cannot find or install 0.1.3 — it has to be
+downloaded once by hand. Every release after this one updates normally.
+
+### Added
+
+- **Auto-update over GitHub Releases.** The app checks shortly after launch,
+  downloads in the background, and never installs silently: a **Restart and
+  update** item appears in the tray, and quitting normally installs it too.
+- **Optional AdGuard DNS-over-HTTPS filtering**, off by default. Routes app DNS
+  through AdGuard, blocking third-party ad and tracking domains. It does **not**
+  block JioHotstar's own advertising, which is served from their domains and
+  stitched into the DRM stream — the setting says so rather than implying
+  otherwise.
+
+### Fixed
+
+- **Release download URLs would have 404'd.** `electron-updater` rewrites spaces to
+  hyphens when building URLs, while GitHub rewrites them to dots on upload, so the
+  default `JioHotstar Setup <version>.exe` resolved to a name that does not exist.
+  Artifacts are now named `JioHotstar-Setup-<version>.exe`, which survives both
+  rewrites unchanged.
+- **Release feed was never published.** `latest.yml`, `latest-linux.yml` and the
+  `.blockmap` files were stripped from releases as "not for humans" — correct
+  before auto-update existed, fatal afterwards. They are now attached, and both
+  matrix jobs' feeds are assembled deliberately instead of overwriting each other.
+- **Packaged app could exit on launch.** `insertCSS` threw
+  `Render frame was disposed before WebFrameMain could be accessed` when the player
+  page redirected, and the rejection was unhandled. Now caught.
+- **Release checksums named files that did not exist**, because the manifest was
+  generated before GitHub rewrote the filenames.
+
+### Known limitations
+
+Unchanged: builds are unsigned, playback against real DRM content is still
+unverified with a signed-in account, no macOS artifact, and VMP/code signing are
+not configured. See `docs/signing.md`.
+
 ## [0.1.2] - 2026-11-12
 
 The first release to build and publish successfully. `v0.1.0` and `v0.1.1` were
@@ -144,7 +184,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mdaashir/JioHotstar/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mdaashir/JioHotstar/releases/tag/v0.1.0
