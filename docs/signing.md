@@ -65,18 +65,41 @@ require one.
 Nothing. It is free for ECS users. Castlabs ask only that you do not create
 throwaway accounts and do not re-sign when an existing signature is still valid.
 
-### What is missing to automate it
+### Creating the account — once, by hand
 
-EVS needs an account and credentials in CI. Account creation is a one-off, and it is
-scripted in this repository rather than done by hand:
+Account creation is one-time, so it is not automated here. It needs Python, since
+`castlabs-evs` is a pip package. That is not present on this machine by default:
+`python` on Windows resolves to the Microsoft Store stub and WSL has no `python3`, so
+install Python 3.12 from python.org first.
 
-1. **Create the account.** Actions → **evs-account** → Run workflow, `mode=help` to
-   print the CLI flags, then `mode=signup`.
-2. **Confirm it.** Castlabs email a code. Re-run with `mode=confirm` and that code.
-3. **Add the secrets** `EVS_ACCOUNT_NAME`, `EVS_PASSWD` and (for signup only)
-   `EVS_EMAIL` as repository secrets.
+```bash
+python -m pip install --upgrade castlabs-evs
 
-After that, releases VMP-sign automatically and no further action is needed.
+# Creates the account. Castlabs email a confirmation code.
+python -m castlabs_evs.account signup \
+  -A "<your-username>" \
+  -P "<your-password>" \
+  -E "s.mohamedaashir@gmail.com" \
+  -F "JioHotstar" -L "Desktop" -O "JioHotstar Desktop"
+
+# Completes it, using the code from that email.
+python -m castlabs_evs.account confirm-signup \
+  -A "<your-username>" -P "<your-password>" -C "<code>"
+```
+
+Then add two repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret             | Value                         |
+| ------------------ | ----------------------------- |
+| `EVS_ACCOUNT_NAME` | the username you just created |
+| `EVS_PASSWD`       | its password                  |
+
+That is the whole setup. Releases VMP-sign from then on; nothing is needed per
+release.
+
+Signup is free but the account is not disposable — castlabs ask that nobody creates
+throwaway accounts, and that builds are not re-signed while an existing signature is
+still valid.
 
 ### Where signing happens, and why it is a hook
 

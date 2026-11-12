@@ -17,8 +17,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   before the ad-hoc signature is applied — the only ordering that works on both.
   Without `EVS_ACCOUNT_NAME`/`EVS_PASSWD` it is a no-op, so forks and local builds
   are unaffected.
-- **A one-off `evs-account` workflow** to create and confirm the free EVS account
-  from CI, since signup needs an email confirmation loop.
 
 ### Notes
 
