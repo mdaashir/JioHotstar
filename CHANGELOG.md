@@ -6,11 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-12
+
+The first release to build and publish successfully. `v0.1.0` and `v0.1.1` were
+both tagged but their release runs failed before producing an artifact; both tags
+are left in place and this supersedes them.
+
+### Fixed
+
+- **Release builds tried to publish themselves.** With no `publish` key in
+  `electron-builder.yml`, the packager detected the GitHub remote and attempted
+  its own release upload, failing with `GitHub Personal Access Token is not set`
+  and producing no artifacts at all. `--publish never` is now passed, and
+  publishing is left to the dedicated job that builds release notes from this
+  changelog and attaches checksums.
+
+### Verified end to end
+
+- The gate runs format, lint, type-check, unit tests, build, and the full
+  end-to-end suite before anything is packaged.
+- Windows installer produced and validated locally with `GH_TOKEN` unset: a real
+  PE executable, correct version in the filename, with `.blockmap` and
+  `latest.yml` alongside it.
+
+### Known limitations
+
+Unchanged: builds are unsigned, playback against real DRM content is still
+unverified with a signed-in account, only Windows and Linux artifacts are
+produced, and there is no auto-update.
+
 ## [0.1.1] - 2026-11-12
 
-The first release that can actually be packaged. `v0.1.0` was tagged but its
-build failed, so no artifacts were ever published; that tag is left in place and
-this supersedes it.
+The first release that could be packaged. `v0.1.0` was tagged but its build
+failed, so no artifacts were ever published; that tag is left in place and this
+supersedes it.
 
 ### Fixed
 
@@ -115,6 +144,7 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mdaashir/JioHotstar/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mdaashir/JioHotstar/releases/tag/v0.1.0
