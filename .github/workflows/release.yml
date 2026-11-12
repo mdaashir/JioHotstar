@@ -89,6 +89,24 @@ jobs:
           NODE_ENV: development
         run: npm ci --include=dev
 
+      # The Castlabs ECS build downloads its Electron binary lazily on first
+      # launch, not during `postinstall`. electron-builder then packages
+      # `node_modules/electron/dist`, so without this step that path does not
+      # exist and packaging fails with "The specified electronDist does not
+      # exist". Resolving the module path is enough to trigger the download
+      # without starting a window.
+      - name: Download the Electron binary
+        run: node -e "console.log(require('electron'))"
+
+      - name: Verify the Electron binary is present
+        shell: bash
+        run: |
+          if [ ! -d node_modules/electron/dist ]; then
+            echo "node_modules/electron/dist is missing after the download step"
+            exit 1
+          fi
+          ls -1 node_modules/electron/dist | head -20
+
       # The version in the installer comes from the tag, so a release can never
       # be built from a commit whose package.json disagrees with the tag. This
       # edits package.json in the runner only; nothing is committed.
