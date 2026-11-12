@@ -68,7 +68,13 @@ test('registers media keys and leaves next/previous to the OS', async () => {
       previousTrack: globalShortcut.isRegistered('MediaPreviousTrack')
     }))
 
-    expect(registered.playPause).toBe(true)
+    expect(
+      registered.playPause,
+      'MediaPlayPause was not registered. On Windows a global shortcut is ' +
+        'system-wide and exclusive, so another copy of JioHotstar already running ' +
+        '(for example the installed build) will hold it and this one cannot. Quit ' +
+        'other instances and re-run. CI is unaffected.'
+    ).toBe(true)
     expect(registered.stop).toBe(true)
     expect(registered.nextTrack).toBe(false)
     expect(registered.previousTrack).toBe(false)
