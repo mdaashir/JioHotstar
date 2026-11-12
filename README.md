@@ -1,6 +1,32 @@
 # JioHotstar Desktop
 
-A native desktop shell around the official JioHotstar web player. The app owns the window, not the content: the player and account flow are the official site, loaded as remote web content with a Widevine-capable Electron build.
+**An unofficial desktop app for JioHotstar on Windows, macOS and Linux.**
+
+A native desktop shell around the official JioHotstar web player, so you can watch
+with a real window instead of a browser tab: picture-in-picture, media keys, fullscreen,
+a system tray, and no browser chrome. Available for Windows (installer), macOS (Apple
+Silicon and Intel) and Linux (AppImage).
+
+The app owns the window, not the content: the player and account flow are the official
+site, loaded as remote web content in a Widevine-capable Electron build. There is no
+copy of anything, and no separate account.
+
+## Download
+
+Get the latest build from the [**Releases page**](https://github.com/mdaashir/JioHotstar/releases/latest).
+
+| Platform              | File                             | Notes                                                       |
+| --------------------- | -------------------------------- | ----------------------------------------------------------- |
+| Windows 10/11 (x64)   | `JioHotstar-Setup-<version>.exe` | Installer. SmartScreen warns: the build is not signed.      |
+| macOS (Apple Silicon) | `JioHotstar-<version>-arm64.dmg` | M1 and later. Ad-hoc signed, so macOS asks you to allow it. |
+| macOS (Intel)         | `JioHotstar-<version>-x64.dmg`   | Pre-2020 Macs.                                              |
+| Linux (x64)           | `JioHotstar-<version>.AppImage`  | `chmod +x` then run.                                        |
+
+Each release publishes `SHA256SUMS.txt`; every file is built from that tag by GitHub
+Actions. The builds are not code signed by a paid certificate, which is why the
+operating system shows a warning on first launch — see [Signing](#signing).
+
+An active JioHotstar account is required to watch anything.
 
 ## Scope and guardrails
 
