@@ -3,6 +3,14 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+/**
+ * Verifies the branded icon without racing the app's own window lifecycle.
+ *
+ * The splash is destroyed as soon as the player paints, and on a fast runner
+ * `firstWindow()` can already be the player, so asserting against whichever
+ * window the app happens to own is inherently racy. This opens a window on the
+ * splash route itself, with the real preload, which is deterministic.
+ */
 test('ships the branded icon in the splash and the app icon', async () => {
   test.setTimeout(120_000)
 
@@ -10,11 +18,30 @@ test('ships the branded icon in the splash and the app icon', async () => {
   const app = await electron.launch({ args: ['.', `--user-data-dir=${userDataDir}`] })
 
   try {
-    const splash = await app.firstWindow()
+    await app.evaluate(async ({ BrowserWindow, app: electronApp }) => {
+      const splash = new BrowserWindow({
+        width: 460,
+        height: 320,
+        show: false,
+        webPreferences: {
+          preload: `${electronApp.getAppPath()}/out/preload/index.js`,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+          webSecurity: true
+        }
+      })
 
-    await splash.waitForSelector('img.brand-mark', { state: 'attached', timeout: 30_000 })
+      await splash.loadFile(`${electronApp.getAppPath()}/out/renderer/index.html`)
+    })
 
-    const splashIcon = await splash.evaluate(() => {
+    const splash = app.windows().find((window) => window.url().includes('index.html'))
+
+    expect(splash).toBeDefined()
+
+    await splash?.waitForSelector('img.brand-mark', { state: 'attached', timeout: 20_000 })
+
+    const splashIcon = await splash?.evaluate(() => {
       const image = document.querySelector('img.brand-mark') as HTMLImageElement
 
       return {
@@ -24,9 +51,9 @@ test('ships the branded icon in the splash and the app icon', async () => {
       }
     })
 
-    expect(splashIcon.src).toMatch(/app-icon/)
-    expect(splashIcon.complete).toBe(true)
-    expect(splashIcon.naturalWidth).toBe(128)
+    expect(splashIcon?.src).toMatch(/app-icon/)
+    expect(splashIcon?.complete).toBe(true)
+    expect(splashIcon?.naturalWidth).toBe(128)
 
     const packagedIcons = await app.evaluate(({ nativeImage, app: electronApp }) => {
       const main = nativeImage.createFromPath(`${electronApp.getAppPath()}/resources/icon.png`)
