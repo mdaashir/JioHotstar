@@ -73,6 +73,13 @@ export class WindowManager {
       settingsStore.setRememberWindowState(patch.rememberWindowState)
     }
 
+    // Persisted only. configureHostResolver is process-wide and must be applied
+    // before any window exists, so it is picked up on the next launch rather
+    // than here.
+    if (patch.dnsFilter !== undefined) {
+      settingsStore.setDnsFilter(patch.dnsFilter)
+    }
+
     this.onSettingsChanged?.()
   }
 

@@ -66,7 +66,13 @@ test('shows every preference with its current value', async () => {
 
     const settings = await openSettingsWindow(app)
 
-    for (const key of ['alwaysOnTop', 'closeToTray', 'hideScrollbars', 'rememberWindowState']) {
+    for (const key of [
+      'alwaysOnTop',
+      'closeToTray',
+      'hideScrollbars',
+      'rememberWindowState',
+      'dnsFilter'
+    ]) {
       await expect(settings.getByTestId(`toggle-${key}`)).toBeVisible()
     }
 
@@ -75,6 +81,9 @@ test('shows every preference with its current value', async () => {
     await expect(settings.getByTestId('toggle-hideScrollbars')).toBeChecked()
     await expect(settings.getByTestId('toggle-rememberWindowState')).toBeChecked()
     await expect(settings.getByTestId('toggle-alwaysOnTop')).not.toBeChecked()
+
+    // DNS filtering routes all app DNS through a third party, so it ships off.
+    await expect(settings.getByTestId('toggle-dnsFilter')).not.toBeChecked()
 
     await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible()
   } finally {
@@ -108,6 +117,46 @@ test('writes a toggle through the bridge and persists it', async () => {
         }
       })
       .toBe(false)
+  } finally {
+    await app.close()
+  }
+})
+
+test('toggles DNS filtering and persists it', async () => {
+  test.setTimeout(180_000)
+
+  const userDataDir = isolatedUserData()
+  const app = await electron.launch({ args: ['.', `--user-data-dir=${userDataDir}`] })
+
+  try {
+    await waitForPlayerWindow(app)
+
+    const settings = await openSettingsWindow(app)
+
+    // Off by default, and the toggle must stay where the user put it. This
+    // regressed once: the main process accepted the key, had no branch to
+    // persist it, and returned a snapshot still claiming `false`, so the
+    // checkbox snapped back the moment it was clicked.
+    await expect(settings.getByTestId('toggle-dnsFilter')).not.toBeChecked()
+
+    await settings.getByTestId('toggle-dnsFilter').click()
+    await expect(settings.getByTestId('toggle-dnsFilter')).toBeChecked()
+
+    // It must still read as on after the write round-trips, not just optimistically.
+    await expect
+      .poll(() => {
+        try {
+          const raw = readFileSync(join(userDataDir, 'settings.json'), 'utf8')
+
+          return (JSON.parse(raw) as Record<string, unknown>)['dnsFilter']
+        } catch {
+          return undefined
+        }
+      })
+      .toBe(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await expect(settings.getByTestId('toggle-dnsFilter')).toBeChecked()
   } finally {
     await app.close()
   }
