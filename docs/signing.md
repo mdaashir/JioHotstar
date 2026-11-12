@@ -67,18 +67,38 @@ throwaway accounts and do not re-sign when an existing signature is still valid.
 
 ### What is missing to automate it
 
-EVS needs account credentials in CI. Those are secrets only the account owner can
-create, so the release workflow does not call it yet. Once an account exists:
+EVS needs an account and credentials in CI. Account creation is a one-off, and it is
+scripted in this repository rather than done by hand:
 
-```yaml
-- name: VMP sign
-  env:
-    EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
-    EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
-  run: |
-    pip install castlabs-evs
-    python3 -m castlabs_evs.vmp sign-pkg --no-ask release/win-unpacked
-```
+1. **Create the account.** Actions → **evs-account** → Run workflow, `mode=help` to
+   print the CLI flags, then `mode=signup`.
+2. **Confirm it.** Castlabs email a code. Re-run with `mode=confirm` and that code.
+3. **Add the secrets** `EVS_ACCOUNT_NAME`, `EVS_PASSWD` and (for signup only)
+   `EVS_EMAIL` as repository secrets.
+
+After that, releases VMP-sign automatically and no further action is needed.
+
+### Where signing happens, and why it is a hook
+
+`scripts/vmp-after-pack.cjs` is wired as electron-builder's `afterPack` hook, not as a
+separate release step. The ordering is the whole reason:
+
+| Platform | Order                                                  |
+| -------- | ------------------------------------------------------ |
+| Windows  | code sign → **VMP sign** → NSIS packages the installer |
+| macOS    | **VMP sign** → code sign (ad-hoc)                      |
+| Linux    | neither; the CDM does not use VMP                      |
+
+`afterPack` fires before code signing and before the installer is built, which
+satisfies both. Signing the _output_ afterwards would be wrong on both platforms:
+on macOS it would replace the ad-hoc signature, producing the "damaged and can't be
+opened" bundle, and on Windows the `.exe` would already contain the unsigned
+directory.
+
+Without `EVS_ACCOUNT_NAME` and `EVS_PASSWD` the hook logs and returns, so local
+builds and forks still work. With them set, a signing failure throws and fails the
+release — shipping a build that silently lost its Widevine signature is worse than
+not shipping.
 
 ## Code signing — there is no free option
 
