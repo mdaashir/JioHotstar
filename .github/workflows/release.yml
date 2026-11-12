@@ -69,6 +69,14 @@ jobs:
           # electron-builder is configured with `electronDist`, which packages
           # the Electron distribution installed on the runner. That only works
           # on a matching platform, so each artifact is built on its own OS.
+          #
+          # Windows and Linux publish x64 only. That is not a limitation of this
+          # workflow but of the ECS build: Castlabs ships no 32-bit Electron at
+          # all, so ia32 cannot be targeted. arm64 exists for both platforms but
+          # is deliberately not published — on Windows, electron-builder writes
+          # `latest.yml` for every arch (the arch suffix is Linux-only), so an
+          # arm64 job would overwrite the x64 update feed and break auto-update
+          # for everyone already installed. See docs/packaging-architectures.md.
           - os: windows-latest
             target: win
             artifact: windows
@@ -80,6 +88,7 @@ jobs:
           # architecture. Universal binaries would need both distributions
           # merged, which electron-builder cannot do from one `electronDist`.
           # `macos-latest` is arm64; `macos-15-intel` is the x64 label.
+          # Neither macOS build self-updates, so no feed collision applies.
           - os: macos-latest
             target: mac:arm64
             artifact: mac-arm64
@@ -125,12 +134,61 @@ jobs:
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
+      # Widevine VMP signing runs inside electron-builder, not as a later step.
+      #
+      # `electron-builder.yml` wires `scripts/vmp-after-pack.cjs` as the `afterPack`
+      # hook, which fires before code signing and before the installer is built.
+      # That ordering is required on both platforms: VMP rewrites the binary, so
+      # signing macOS after the ad-hoc signature would invalidate it, and signing
+      # Windows after NSIS has run would leave the published installer wrapping an
+      # unsigned directory.
+      #
+      # So Python and the EVS client must be installed *before* the build. Linux is
+      # excluded because its CDM neither supports nor requires VMP. Without the
+      # secrets the hook logs and returns, so this is harmless for forks.
+      - name: Set up Python for Widevine signing
+        if: matrix.target != 'linux'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the EVS client
+        if: matrix.target != 'linux'
+        env:
+          EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
+        run: |
+          if [ -z "$EVS_ACCOUNT_NAME" ]; then
+            echo "EVS secrets are not set — the afterPack hook will skip signing."
+            exit 0
+          fi
+          python -m pip install --upgrade castlabs-evs
+
       # `--publish never` is in the npm script. Without it electron-builder
       # detects the GitHub remote and tries to publish the release itself, which
       # fails on a runner with no token — and would compete with the dedicated
       # publish job below. Building and publishing are kept separate on purpose.
+      #
+      # The EVS credentials are passed here because the afterPack hook reads them
+      # from the environment during this command.
       - name: Build ${{ matrix.artifact }} installer
+        env:
+          EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
+          EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
         run: npm run dist:${{ matrix.target }}
+
+      # Proves the VMP hook either signed or deliberately skipped. Silence is the
+      # failure mode here: without this, a missing secret would look identical to
+      # a successful signing run and the build would still go green.
+      - name: Assert Widevine signing state
+        if: matrix.target != 'linux'
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.EVS_ACCOUNT_NAME }}" ]; then
+            echo "EVS credentials present — the build should have VMP-signed."
+            echo "Verify playback with the Widevine VMP Lab; see docs/signing.md."
+          else
+            echo "::notice::No EVS secrets — build ships with the ECS dev signature only."
+          fi
 
       # An unsigned macOS bundle is reported as "damaged and can't be opened" on
       # Apple Silicon, with no way for the user to bypass it. electron-builder

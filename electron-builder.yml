@@ -20,6 +20,13 @@ electronVersion: 45.2.1
 asar: true
 npmRebuild: false
 
+# Widevine VMP signing, free through castlabs EVS. It must run here — `afterPack`
+# fires before code signing and before the installer is built. Signing the output
+# afterwards would either invalidate the macOS signature or leave the NSIS
+# installer wrapping an unsigned directory. The hook is a no-op without EVS
+# credentials, so local builds and forks are unaffected.
+afterPack: scripts/vmp-after-pack.cjs
+
 files:
   - out/**
   - package.json

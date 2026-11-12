@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Windows and Linux packaging are checked on every pull request**, completing the
+  coverage macOS got in 0.1.6. Each runs the same `dist:` command the release uses
+  and asserts the installer exists, so a broken packaging config fails on the PR
+  rather than on a tag.
+- **Widevine VMP signing is wired into the release** through a castlabs EVS
+  `afterPack` hook. It signs Windows before NSIS packages the installer and macOS
+  before the ad-hoc signature is applied — the only ordering that works on both.
+  Without `EVS_ACCOUNT_NAME`/`EVS_PASSWD` it is a no-op, so forks and local builds
+  are unaffected.
+- **A one-off `evs-account` workflow** to create and confirm the free EVS account
+  from CI, since signup needs an email confirmation loop.
+
+### Notes
+
+- **32-bit builds are impossible, not skipped.** Castlabs publishes no `ia32`
+  Electron for any platform, and the 32-bit line would mean Electron ≤43 without
+  Widevine. See [docs/packaging-architectures.md](docs/packaging-architectures.md).
+- **Windows arm64 is buildable but deliberately unpublished.** electron-builder
+  writes `latest.yml` for every Windows arch (the arch suffix is Linux-only), so an
+  arm64 job would overwrite the x64 update feed and break auto-update for everyone
+  installed. x64 runs under emulation on Windows on ARM. Linux arm64 would be safe
+  to add — it gets its own feed — but is untested, so it is not shipped yet.
+
 ## [0.1.6] - 2026-11-12
 
 A security fix in the IPC sender guard, and the CI that caught a macOS packaging

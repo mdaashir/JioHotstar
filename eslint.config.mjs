@@ -25,13 +25,23 @@ export default tseslint.config(
     }
   },
   {
-    files: ['scripts/**/*.mjs'],
+    // Node scripts, not app code: CommonJS for the electron-builder hook
+    // (`afterPack` receives the config as CJS) and ESM for the generators.
+    files: ['scripts/**/*.mjs', 'scripts/**/*.cjs'],
     languageOptions: {
       globals: {
         Buffer: 'readonly',
         console: 'readonly',
-        process: 'readonly'
+        process: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        __dirname: 'readonly'
       }
+    },
+    rules: {
+      // CommonJS is required here, not a style choice.
+      '@typescript-eslint/no-require-imports': 'off'
     }
   },
   prettier
