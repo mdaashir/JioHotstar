@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **macOS is now checked on every pull request.** `ci.yml` runs `verify` on
+  `macos-latest` alongside Ubuntu and Windows. Previously the only macOS
+  verification lived in the release workflow, which runs on a tag, so a macOS
+  regression was first discovered after a release had already been cut.
+
 ## [0.1.5] - 2026-11-12
 
 **The first release with macOS builds.** Windows and Linux are unchanged.

@@ -26,9 +26,17 @@ jobs:
         # Windows is included deliberately: line-ending problems and anything
         # path-related only appear there, and the artifact most users install is
         # a Windows installer.
+        #
+        # macOS is included because it ships now. Before this, the only macOS
+        # verification was inside release.yml, which runs on a tag — so a macOS
+        # regression was first discovered after a release was already cut. This
+        # job is also what catches a macOS-specific break in `npm run verify`
+        # (case-sensitive paths, platform-conditional code) on the pull request
+        # that introduced it.
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
 
     steps:
       - uses: actions/checkout@v7

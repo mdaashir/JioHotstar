@@ -54,7 +54,7 @@ npm run dev
 
 | Workflow         | Trigger                                                         | What it does                                                                                  |
 | ---------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu **and** Windows, plus `e2e` on Ubuntu                                      |
+| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu, Windows **and** macOS, plus `e2e` on Ubuntu                               |
 | `release.yml`    | Pushing a `v*` tag                                              | Gates on `verify`, builds Windows, Linux, and macOS (arm64 + x64), publishes a GitHub Release |
 | `dependabot.yml` | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                               |
 
