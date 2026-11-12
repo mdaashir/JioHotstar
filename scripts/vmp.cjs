@@ -24,7 +24,6 @@
  */
 
 const { execFileSync } = require('node:child_process')
-const { join } = require('node:path')
 
 /**
  * Runs python with the castlabs EVS client, trying interpreters in order.
@@ -89,11 +88,12 @@ function signPackage(context, expectedPlatform) {
     return
   }
 
-  // macOS signs the .app bundle; Windows signs the directory holding the exe.
-  const subject =
-    expectedPlatform === 'darwin'
-      ? join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`)
-      : context.appOutDir
+  // `sign-pkg` takes the *package directory* and finds the app inside it — not the
+  // .app bundle itself. Passing the bundle failed on macOS with
+  // "FileNotFoundError: No matching executable found in: .../JioHotstar.app".
+  // `appOutDir` is that directory on both platforms, so no platform branch is
+  // needed here; the executable paths differ but the argument is the same.
+  const subject = context.appOutDir
 
   console.log(`[vmp] signing ${subject}`)
 
