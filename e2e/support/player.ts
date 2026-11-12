@@ -66,14 +66,62 @@ function assertStarted(app: ElectronApplication, startedAt: number): void {
   }
 }
 
+/**
+ * Finds the player window, tolerating windows that are torn down mid-iteration.
+ *
+ * The splash is destroyed as soon as the player paints, so `getURL()` can throw
+ * "Render frame was disposed before WebFrameMain could be accessed" while this
+ * runs. A window that is already gone is simply not the player.
+ */
 async function playerIsVisible(app: ElectronApplication): Promise<boolean> {
   return app.evaluate(({ BrowserWindow }) => {
-    const player = BrowserWindow.getAllWindows().find((window) =>
-      window.webContents.getURL().includes('hotstar.com')
-    )
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (window.isDestroyed() || window.webContents.isDestroyed()) {
+        continue
+      }
 
-    return player !== undefined && player.isVisible()
+      let isPlayer
+
+      try {
+        isPlayer = window.webContents.getURL().includes('hotstar.com')
+      } catch {
+        continue
+      }
+
+      if (isPlayer) {
+        try {
+          return window.isVisible()
+        } catch {
+          return false
+        }
+      }
+    }
+
+    return false
   })
+}
+
+/**
+ * Returns the first Playwright page whose URL contains the given fragment,
+ * skipping any window that disappears while we look at it.
+ *
+ * `app.windows()` reads URLs from live webContents, and the app tears down its
+ * splash window as soon as the player paints. Enumerating windows during that
+ * transition throws "Render frame was disposed before WebFrameMain could be
+ * accessed", so every read is guarded.
+ */
+function findPage(app: ElectronApplication, fragment: string): Page | undefined {
+  for (const page of app.windows()) {
+    try {
+      if (page.url().includes(fragment)) {
+        return page
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return undefined
 }
 
 /**
@@ -93,7 +141,7 @@ export async function waitForPlayerWindow(
   while (Date.now() < deadline) {
     assertStarted(app, startedAt)
 
-    const candidate = app.windows().find((window) => window.url().includes('hotstar.com'))
+    const candidate = findPage(app, 'hotstar.com')
 
     if (candidate !== undefined && (await playerIsVisible(app))) {
       return candidate
