@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-12
+
+**The first genuinely VMP-signed release.** Windows builds now carry a production
+Widevine signature that verifies, so a real licence server should accept them instead
+of relying on the development signature the ECS build ships with.
+
+### Fixed
+
+- **The VMP signature did not attach to the shipped Windows binary.** Signing in
+  `afterPack` produced a `.sig` that failed `evs-vmp verify-pkg` with
+  `InvalidSignature`, because electron-builder rewrites the exe's icon and version
+  strings after that hook fires — measured as the exe being three seconds newer than
+  its own signature. Moved to `afterSign`, which runs once the exe is final.
+
+  A `.sig` file existing is not evidence of signing. The ECS build ships
+  `electron.exe.sig` and electron-builder copies it in, so an unsigned build is
+  indistinguishable by filename; only `verify-pkg` tells them apart.
+
 ### Added
 
 - **Windows and Linux packaging are checked on every pull request**, completing the
@@ -15,24 +33,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Widevine VMP signing is wired into the release** through castlabs EVS hooks, and
   is verified rather than assumed. Two hooks, because the order is opposite per
   platform: macOS signs in `afterPack` (VMP must precede the code signature), Windows
-  signs in `afterSign` (electron-builder rewrites the exe's icon and version strings
-  after `afterPack`, which invalidated a signature made there). Without
-  `EVS_ACCOUNT_NAME`/`EVS_PASSWD` both are no-ops, so forks and local builds work.
-
-### Fixed
-
-- **The VMP signature did not attach to the shipped Windows binary.** Signing in
-  `afterPack` produced a `.sig` that failed `evs-vmp verify-pkg` with
-  `InvalidSignature`, because electron-builder edits the exe afterwards. Moved to
-  `afterSign`, which runs once the exe is final, and a passing verification now gates
-  the release.
-
-  Worth recording: a `.sig` file existing is not evidence of signing. The ECS build
-  ships `electron.exe.sig` and electron-builder copies it in, so an unsigned build
-  looks identical by filename — only `verify-pkg` distinguishes them.
+  signs in `afterSign` (see above). Without `EVS_ACCOUNT_NAME`/`EVS_PASSWD` both are
+  no-ops, so forks and local builds still work.
 
 ### Notes
 
+- **macOS VMP signing is verified but does not gate the release.** Its
+  VMP-then-ad-hoc-sign ordering cannot be exercised off a macOS runner, and a failing
+  macOS job would block the already-verified Windows and Linux artifacts. A failure is
+  reported as a warning rather than swallowed.
 - **VMP signing needs no system Python.** The hooks try `uv run --with castlabs-evs`,
   then `python`, then `python3`, so the same code works in CI (which has `python` from
   setup-python) and on a machine with only uv.
@@ -300,7 +309,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/mdaashir/JioHotstar/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/mdaashir/JioHotstar/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...v0.1.4
