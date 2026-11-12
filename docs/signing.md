@@ -65,40 +65,53 @@ require one.
 Nothing. It is free for ECS users. Castlabs ask only that you do not create
 throwaway accounts and do not re-sign when an existing signature is still valid.
 
-### Creating the account — once, by hand
+### The account for this repository
 
-Account creation is one-time, so it is not automated here. Use **uv**, which installs
-the client and its own Python without touching the system: this machine has no real
-`python` (`python` resolves to the Microsoft Store stub, and WSL has no `python3`).
+An EVS account already exists for this project and its credentials are stored as
+repository secrets:
+
+| Secret             | Value                   |
+| ------------------ | ----------------------- |
+| `EVS_ACCOUNT_NAME` | `mdaashir`              |
+| `EVS_PASSWD`       | stored as a repo secret |
+
+So releases VMP-sign with nothing further to do — **once the account is confirmed**.
+
+#### If it ever needs confirming again
+
+Signup emails a code; that code completes it:
 
 ```bash
-# Installs castlabs-evs into an isolated environment, with its own Python.
-uv tool install castlabs-evs
-
-# Creates the account. Castlabs email a confirmation code.
-uvx --from castlabs-evs evs-account signup \
-  -A "<your-username>" \
-  -P "<your-password>" \
-  -E "s.mohamedaashir@gmail.com" \
-  -F "JioHotstar" -L "Desktop" -O "JioHotstar Desktop"
-
-# Completes it, using the code from that email.
-uvx --from castlabs-evs evs-account confirm-signup \
-  -A "<your-username>" -P "<your-password>" -C "<code>"
+uvx --from castlabs-evs evs-account confirm-signup -A mdaashir -P "<password>" -C "<code>"
 ```
 
-Or just run `uvx --from castlabs-evs evs-account signup` with no flags and answer the
-prompts — it caches your answers for the confirm step.
+Re-send the code if the email is lost:
 
-Then add two repository secrets (Settings → Secrets and variables → Actions):
+```bash
+uvx --from castlabs-evs evs-account resend -A mdaashir -P "<password>"
+```
 
-| Secret             | Value                         |
-| ------------------ | ----------------------------- |
-| `EVS_ACCOUNT_NAME` | the username you just created |
-| `EVS_PASSWD`       | its password                  |
+Check the state at any time — `UserNotConfirmedException` means it is created but not
+confirmed, `UserNotFoundException` means it does not exist:
 
-That is the whole setup. Releases VMP-sign from then on; nothing is needed per
-release.
+```bash
+uvx --from castlabs-evs evs-account -n reauth -A mdaashir -P "<password>"
+```
+
+#### Creating a fresh account, if this one is ever lost
+
+```bash
+uv tool install castlabs-evs
+
+uvx --from castlabs-evs evs-account signup -A "<username>" -P "<password>" \
+  -E "s.mohamedaashir@gmail.com" -F "Mohamed" -L "Aashir" -O "JioHotstar Desktop"
+
+uvx --from castlabs-evs evs-account confirm-signup -A "<username>" -P "<password>" -C "<code>"
+```
+
+The password policy is AWS Cognito's: at least one lowercase, uppercase, digit and
+**symbol** character. A generated 20-character password without a symbol is rejected
+with `InvalidPasswordException`.
 
 Signup is free but the account is not disposable — castlabs ask that nobody creates
 throwaway accounts, and that builds are not re-signed while an existing signature is
