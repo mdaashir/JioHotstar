@@ -31,7 +31,8 @@ describe('sanitizeSettingsPatch', () => {
       alwaysOnTop: true,
       closeToTray: true,
       hideScrollbars: true,
-      rememberWindowState: true
+      rememberWindowState: true,
+      dnsFilter: true
     }
 
     expect(sanitizeSettingsPatch(full)).toEqual(full)
@@ -43,6 +44,7 @@ describe('SETTINGS_KEYS', () => {
     expect([...SETTINGS_KEYS].sort()).toEqual([
       'alwaysOnTop',
       'closeToTray',
+      'dnsFilter',
       'hideScrollbars',
       'rememberWindowState'
     ])
