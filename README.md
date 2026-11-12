@@ -86,6 +86,44 @@ The release workflow therefore attaches `latest.yml`, `latest-linux.yml`, and th
 `.blockmap` files alongside the installers. Those are consumed by the updater
 rather than by people, but they must be present for updates to work.
 
+## DNS filtering (optional, off by default)
+
+Enabling **Block third-party trackers** in settings routes the app's DNS through
+AdGuard's public DNS-over-HTTPS resolver using `app.configureHostResolver`.
+
+### What it does and does not do
+
+Measured against the live resolver, not assumed:
+
+| Domain                                    | Result                  |
+| ----------------------------------------- | ----------------------- |
+| `doubleclick.net`, `googleadservices.com` | **blocked** (`0.0.0.0`) |
+| `ads.hotstar.com`                         | **allowed**             |
+| `api.hotstar.com`, `www.hotstar.com`      | allowed                 |
+
+**It does not make JioHotstar ad-free.** Their advertising is served from their
+own domains and stitched server-side into the DRM-protected stream, which DNS
+cannot see. Blocking it would mean blocking the video. What this option actually
+does is stop third-party ad and tracking domains — Google's, Meta's, analytics
+vendors — from being contacted at all.
+
+It is off by default, and changing it takes effect on the next launch:
+`configureHostResolver` is process-wide and must be applied before any window
+exists, so it cannot be toggled live without recreating the session, which breaks
+DRM.
+
+The verified test asserts the player still loads with filtering enabled — a
+blocklist false positive that took out an auth or CDN domain would be the real
+failure mode, and that is what this guards.
+
+### A note on the resolver URL
+
+The DoH endpoint is `https://dns.adguard-dns.com/dns-query`. AdGuard also serves a
+convenience JSON API at `/resolve`, which is **not** a DoH endpoint:
+`configureHostResolver` accepts it without complaint and then fails _every_
+lookup with `ERR_NAME_NOT_RESOLVED`, including the site itself. That was the
+first thing I tried, and it silently breaks the whole app.
+
 ## Signing
 
 See [docs/signing.md](docs/signing.md). In short: VMP signing (needed for Widevine
