@@ -21,6 +21,15 @@ npm install
 npm run dev
 ```
 
+## Continuous integration
+
+Two workflows live in `.github/workflows/`:
+
+- **`verify.yml`** runs on every pull request and on pushes to `main`, on **Ubuntu and Windows**. It runs `npm run verify` (format, lint, type-check, unit tests, build). Windows is included on purpose: the line-ending failure that once made the whole repo look unformatted only appears there. It does not launch the app, so it needs no display server.
+- **`e2e.yml`** runs on demand and nightly, not per pull request. The suite launches the real app, downloads the Widevine CDM, and loads the live JioHotstar site, so it depends on network and a display (`xvfb`). Gating pull requests on a suite with those dependencies would produce failures unrelated to the change.
+
+The Electron binary is fetched lazily on first launch rather than by `postinstall`, so it is cached under `~/.cache/electron` (Linux) or `%LOCALAPPDATA%\electron\Cache` (Windows) between runs.
+
 ## Commands
 
 | Command              | Purpose                                           |
