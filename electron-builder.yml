@@ -2,6 +2,14 @@ appId: com.jiohotstar.desktop
 productName: JioHotstar
 copyright: Copyright © 2026
 
+# The updater reads this feed. Assets are attached by the release workflow,
+# which runs electron-builder with --publish never and creates the Release with
+# `gh`; this block only tells the packaged app where to look.
+publish:
+  provider: github
+  owner: mdaashir
+  repo: JioHotstar
+
 directories:
   output: release
   buildResources: build
@@ -34,6 +42,13 @@ nsis:
   # NSIS needs a real .ico; pointing it at the PNG fails with "invalid icon file".
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
+  # A hyphenated name with no spaces is required for auto-update. electron-updater
+  # rewrites spaces to hyphens when building the download URL
+  # (`url.replace(/ /g, "-")`), while GitHub rewrites spaces to dots on upload.
+  # The default "JioHotstar Setup 1.2.3.exe" therefore resolves to
+  # JioHotstar-Setup-1.2.3.exe and 404s. A name that survives both rewrites
+  # unchanged cannot break.
+  artifactName: JioHotstar-Setup-${version}.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
@@ -52,6 +67,9 @@ mac:
 
 linux:
   icon: build/icon.png
+  # Same reasoning as the NSIS artifact name: no spaces, so the updater's
+  # space-to-hyphen rewrite is a no-op.
+  artifactName: JioHotstar-${version}.${ext}
   target:
     - target: AppImage
       arch:

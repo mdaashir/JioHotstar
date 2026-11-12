@@ -5,6 +5,7 @@ export interface TrayLabels {
   readonly alwaysOnTop: string
   readonly hideScrollbars: string
   readonly settings: string
+  readonly installUpdate: string
   readonly quit: string
 }
 
@@ -16,6 +17,7 @@ export function trayLabels(alwaysOnTop: boolean, isMac: boolean): TrayLabels {
     alwaysOnTop: alwaysOnTop ? 'Unpin from top' : 'Keep on top',
     hideScrollbars: 'Hide scrollbars',
     settings: isMac ? 'Settings…' : 'Settings...',
+    installUpdate: isMac ? 'Restart and update…' : 'Restart and update...',
     quit: isMac ? 'Quit JioHotstar' : 'Exit'
   }
 }

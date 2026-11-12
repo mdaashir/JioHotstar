@@ -60,6 +60,38 @@ Release builds are **unsigned**: Windows SmartScreen warns on first run and macO
 
 The Electron binary is fetched lazily on first launch rather than by `postinstall`, so it is cached under `~/.cache/electron` (Linux) or `%LOCALAPPDATA%\electron\Cache` (Windows) between runs.
 
+## Auto-update
+
+The packaged app checks GitHub Releases shortly after launch and downloads a newer
+version in the background. It never installs silently: a **Restart and update**
+item appears in the tray once a download completes, and quitting normally installs
+it too.
+
+- Checks are delayed by ~8 seconds so they never compete with the Widevine install
+  or the first page load.
+- Only packaged builds check. In development there is no installed version to
+  replace, so the feature reports as unsupported rather than erroring.
+- Failures surface as a brief tray tooltip. A failed feed fetch usually means the
+  release is missing `latest.yml`, not that the user is offline.
+
+### Why artifact names have no spaces
+
+The Windows installer ships as `JioHotstar-Setup-<version>.exe`. This is required,
+not cosmetic: `electron-updater` rewrites spaces to **hyphens** when building the
+download URL, while GitHub rewrites them to **dots** on upload. A name containing
+spaces resolves to a URL that does not exist and the download 404s. A hyphenated
+name survives both rewrites unchanged.
+
+The release workflow therefore attaches `latest.yml`, `latest-linux.yml`, and the
+`.blockmap` files alongside the installers. Those are consumed by the updater
+rather than by people, but they must be present for updates to work.
+
+## Signing
+
+See [docs/signing.md](docs/signing.md). In short: VMP signing (needed for Widevine
+playback in production) is **free** through castlabs EVS; code signing for Windows
+and macOS is **not free** and is not configured, so builds are unsigned.
+
 ## Commands
 
 | Command              | Purpose                                           |

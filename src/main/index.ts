@@ -8,6 +8,7 @@ import { installNavigationGuards } from './security/navigation.guard'
 import { installPermissionPolicy } from './security/permission.policy'
 import { startup } from './startup/startup'
 import { TrayService } from './tray/tray.service'
+import { updaterService } from './updater/updater.service'
 import { windowManager } from './window/window.manager'
 
 app.setName(APP_NAME)
@@ -67,6 +68,15 @@ if (!hasSingleInstanceLock) {
         windowManager.notifyMediaKey(status)
       }
     })
+
+    // Delayed so the update check never competes with the Widevine install and
+    // the first page load. The tray reflects the outcome.
+    updaterService.init({
+      onState: (state) => {
+        trayService.notifyUpdate(state)
+      }
+    })
+    updaterService.scheduleCheck()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
