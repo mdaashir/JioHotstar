@@ -6,6 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-12
+
+**Fixes the DNS filter toggle, which was unusable in 0.1.3.** Nothing else
+changed; this is the same build with that one defect repaired.
+
+### Fixed
+
+- **The AdGuard DNS toggle snapped back off when clicked.** Every preference is
+  written in one place, `applySettingsPatch`, and `dnsFilter` had no branch there.
+  The write was accepted by the IPC sanitiser, silently dropped, and the handler
+  returned a snapshot still claiming `false`, so the checkbox reverted. Before this
+  release the setting could not be enabled from the UI at all — `setDnsFilter` had
+  no caller, so only editing `settings.json` by hand turned the filter on.
+
+### Note
+
+Enabling the filter still takes effect only on the **next launch**.
+`configureHostResolver` is process-wide and must run before any window exists, so
+it cannot be applied live without recreating the session and breaking DRM.
+
 ## [0.1.3] - 2026-11-12
 
 **The first release that can update itself.** `v0.1.2` shipped before the updater
@@ -184,7 +204,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mdaashir/JioHotstar/compare/v0.1.0...v0.1.1
