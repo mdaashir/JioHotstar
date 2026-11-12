@@ -23,11 +23,11 @@ npm run dev
 
 ## Continuous integration and releases
 
-| Workflow         | Trigger                                                         | What it does                                                                                   |
-| ---------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu **and** Windows, plus `e2e` on Ubuntu                                       |
-| `release.yml`    | Pushing a `v*` tag                                              | Gates on `verify`, builds the Windows installer and Linux AppImage, publishes a GitHub Release |
-| `dependabot.yml` | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                                |
+| Workflow         | Trigger                                                         | What it does                                                                                  |
+| ---------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu **and** Windows, plus `e2e` on Ubuntu                                      |
+| `release.yml`    | Pushing a `v*` tag                                              | Gates on `verify`, builds Windows, Linux, and macOS (arm64 + x64), publishes a GitHub Release |
+| `dependabot.yml` | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                               |
 
 Windows is in the `verify` matrix on purpose: the line-ending failure that once made the whole repo look unformatted only appears there.
 
@@ -50,7 +50,7 @@ Use an **annotated** tag (`-a`): it records the tagger, date, and message, appea
 
 The installer version comes from the tag rather than `package.json`, so the two cannot disagree. The release body is extracted from `CHANGELOG.md` by `scripts/changelog-section.mjs`, so the Release page and the committed changelog cannot drift apart — a missing or empty entry fails the release instead of publishing blank notes.
 
-Release builds are **unsigned**: Windows SmartScreen warns on first run and macOS Gatekeeper refuses to open the app. The release notes say so rather than implying the builds are signed.
+Release builds are **not signed by a paid certificate**: Windows SmartScreen warns on first run, and macOS builds are ad-hoc signed so they launch but report an unidentified developer. The release notes say so rather than implying the builds are signed.
 
 ### Dependabot exclusions
 
@@ -71,6 +71,11 @@ it too.
   or the first page load.
 - Only packaged builds check. In development there is no installed version to
   replace, so the feature reports as unsupported rather than erroring.
+- **Not on macOS.** Squirrel.Mac validates a downloaded update against the running
+  build's code-signing designated requirement, and an ad-hoc signature is a hash of
+  that one build, so every update fails after downloading. Rather than offer a
+  Restart button that cannot work, the check is disabled there and the UI points to
+  the releases page. A paid Developer ID certificate would fix it.
 - Failures surface as a brief tray tooltip. A failed feed fetch usually means the
   release is missing `latest.yml`, not that the user is offline.
 
@@ -127,22 +132,24 @@ first thing I tried, and it silently breaks the whole app.
 ## Signing
 
 See [docs/signing.md](docs/signing.md). In short: VMP signing (needed for Widevine
-playback in production) is **free** through castlabs EVS; code signing for Windows
-and macOS is **not free** and is not configured, so builds are unsigned.
+playback in production) is **free** through castlabs EVS; macOS uses free **ad-hoc**
+signing so the app launches; paid Windows Authenticode and Apple Developer ID
+signing are **not** configured.
 
 ## Commands
 
-| Command              | Purpose                                           |
-| -------------------- | ------------------------------------------------- |
-| `npm run dev`        | Run the app with the Vite dev server and HMR      |
-| `npm run build`      | Build main, preload, and renderer into `out/`     |
-| `npm start`          | Preview the built app                             |
-| `npm run verify`     | Format, lint, type-check, unit test, and build    |
-| `npm run test:e2e`   | Build, then launch the app with Playwright        |
-| `npm run package`    | Build an unpacked app into `release/win-unpacked` |
-| `npm run dist:win`   | Build the Windows NSIS installer                  |
-| `npm run dist:mac`   | Build the macOS dmg (must run on macOS)           |
-| `npm run dist:linux` | Build the Linux AppImage (must run on Linux)      |
+| Command                  | Purpose                                           |
+| ------------------------ | ------------------------------------------------- |
+| `npm run dev`            | Run the app with the Vite dev server and HMR      |
+| `npm run build`          | Build main, preload, and renderer into `out/`     |
+| `npm start`              | Preview the built app                             |
+| `npm run verify`         | Format, lint, type-check, unit test, and build    |
+| `npm run test:e2e`       | Build, then launch the app with Playwright        |
+| `npm run package`        | Build an unpacked app into `release/win-unpacked` |
+| `npm run dist:win`       | Build the Windows NSIS installer                  |
+| `npm run dist:mac:arm64` | Build the macOS dmg for Apple Silicon (on macOS)  |
+| `npm run dist:mac:x64`   | Build the macOS dmg for Intel (on macOS)          |
+| `npm run dist:linux`     | Build the Linux AppImage (must run on Linux)      |
 
 ## Keyboard shortcuts
 
@@ -259,14 +266,14 @@ Saved bounds are validated on read: values that are malformed are discarded, siz
 
 ## Packaging
 
-`electron-builder` packages the ECS build, not stock Electron: `electronDist` points at `node_modules/electron/dist`, so whatever `npm` installed is what ships. The side effect is that a build only works on the platform matching that installed distribution — cross-platform builds would need the `electronDownload` mirror mode instead. CI would have to install the matching ECS distribution per runner.
+`electron-builder` packages the ECS build, not stock Electron: `electronDist` points at `node_modules/electron/dist`, so whatever `npm` installed is what ships. The side effect is that a build only works on the platform and architecture matching that installed distribution, which is why the release workflow has one job per platform **and** per macOS architecture rather than a single cross-platform job.
 
 Artifacts land in `release/`, which is git-ignored.
 
-- **Unsigned.** No certificate is configured, so Windows SmartScreen warns and macOS Gatekeeper blocks. Signing and notarization are not set up.
-- **Default icon.** No application icon is supplied, so the Electron icon is used. Brand assets are a deliberate open decision, not an oversight.
-- **macOS entitlements.** `build/entitlements.mac.plist` disables library validation; without it the Widevine CDM cannot load under hardened runtime.
-- **No auto-update.** There is no publish target or signing identity yet, so `electron-updater` is not wired in.
+- **Windows: unsigned.** No Authenticode certificate, so SmartScreen warns on first run.
+- **macOS: ad-hoc signed.** `mac.identity: "-"` runs the real signing pipeline with a self-generated identity. This is the free option and it is what makes the app launchable at all — an unsigned bundle is reported as "damaged" on Apple Silicon with no bypass, while an ad-hoc one is merely "unidentified developer". Developer ID signing and notarization are not configured.
+- **macOS entitlements.** `build/entitlements.mac.plist` disables library validation; without it the Widevine CDM cannot load under hardened runtime, and ad-hoc signing would fail to launch.
+- **Auto-update is platform-dependent.** Windows and Linux self-update; macOS does not, because Squirrel.Mac validates an update against the running build's signature and an ad-hoc signature is unique per build.
 - Only `out/` and `package.json` are packed. React lives in devDependencies because Vite bundles it into the renderer, which keeps the asar at roughly 660 kB instead of 9 MB.
 
 ## Electron build

@@ -4,8 +4,20 @@ import type { UpdateState } from './updater'
 
 describe('canCheckForUpdates', () => {
   it('only allows packaged builds', () => {
-    expect(canCheckForUpdates(true)).toBe(true)
-    expect(canCheckForUpdates(false)).toBe(false)
+    expect(canCheckForUpdates(true, 'win32')).toBe(true)
+    expect(canCheckForUpdates(false, 'win32')).toBe(false)
+  })
+
+  it('allows packaged Linux builds', () => {
+    expect(canCheckForUpdates(true, 'linux')).toBe(true)
+  })
+
+  // Squirrel.Mac rejects an update whose signature does not satisfy the running
+  // app's designated requirement, and an ad-hoc signature is per-build. The
+  // download would always fail after completing, so the check is not offered.
+  it('never offers self-update on macOS', () => {
+    expect(canCheckForUpdates(true, 'darwin')).toBe(false)
+    expect(canCheckForUpdates(false, 'darwin')).toBe(false)
   })
 })
 

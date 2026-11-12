@@ -55,15 +55,24 @@ nsis:
 
 mac:
   icon: build/icon.png
+  # No arch list: each CI job builds one architecture from the Electron
+  # distribution installed on that runner, because `electronDist` below pins a
+  # single architecture. The arch is chosen by `--arm64` / `--x64` instead.
   target:
     - target: dmg
-      arch:
-        - arm64
-        - x64
+  # Two DMGs are published per release, so the architecture must be in the name.
+  # Hyphenated for the same reason as the other platforms.
+  artifactName: JioHotstar-${version}-${arch}.${ext}
   category: public.app-category.entertainment
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # Ad-hoc signing, and it is not optional. An unsigned bundle is reported as
+  # "damaged and can't be opened" on Apple Silicon, which the user cannot bypass;
+  # an ad-hoc signature is merely "unidentified developer", which they can.
+  # `"-"` invokes the real signing pipeline with a self-generated identity; using
+  # `null` here skips signing and produces the unopenable bundle.
+  identity: '-'
 
 linux:
   icon: build/icon.png

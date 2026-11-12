@@ -75,6 +75,17 @@ jobs:
           - os: ubuntu-latest
             target: linux
             artifact: linux
+          # One job per architecture: `electronDist` packages the Electron
+          # distribution installed on the runner, and that is a single
+          # architecture. Universal binaries would need both distributions
+          # merged, which electron-builder cannot do from one `electronDist`.
+          # `macos-latest` is arm64; `macos-15-intel` is the x64 label.
+          - os: macos-latest
+            target: mac:arm64
+            artifact: mac-arm64
+          - os: macos-15-intel
+            target: mac:x64
+            artifact: mac-x64
 
     steps:
       - uses: actions/checkout@v7
@@ -129,6 +140,7 @@ jobs:
             release/*.exe
             release/*.blockmap
             release/*.AppImage
+            release/*.dmg
             release/latest*.yml
           if-no-files-found: error
           retention-days: 14
@@ -158,18 +170,25 @@ jobs:
           # Flatten the installers, and take the Windows feed: `latest.yml` is
           # the one this app's updater reads, while `latest-linux.yml` belongs to
           # the Linux AppImage updater.
+          #
+          # No `latest-mac.yml` is taken: the two macOS jobs each produce one, and
+          # macOS builds do not self-update (an ad-hoc signature fails Squirrel's
+          # signature check), so publishing either would advertise an update that
+          # cannot install.
           find . -mindepth 2 -type f -name '*.exe' -exec mv -f {} . \;
           find . -mindepth 2 -type f -name '*.AppImage' -exec mv -f {} . \;
+          find . -mindepth 2 -type f -name '*.dmg' -exec mv -f {} . \;
           find . -mindepth 2 -type f -name 'latest.yml' -exec mv -f {} . \;
           find . -mindepth 2 -type f -name 'latest-linux.yml' -exec mv -f {} . \;
           find . -mindepth 2 -type f -name '*.blockmap' -exec mv -f {} . \;
+          find . -mindepth 2 -type f -name 'latest-mac.yml' -delete
           find . -mindepth 1 -type d -empty -delete
           find . -mindepth 1 -type d -exec rm -rf {} +
           find . -maxdepth 1 -type f -name 'builder-debug.yml' -delete
 
           # Checksum only the user-facing downloads; the update feed and its
           # blockmap are consumed by electron-updater, not by people.
-          sha256sum ./*.exe ./*.AppImage > SHA256SUMS.txt
+          sha256sum ./*.exe ./*.AppImage ./*.dmg > SHA256SUMS.txt
 
           echo "--- published assets ---"
           ls -lh
@@ -193,13 +212,30 @@ jobs:
 
           ## Installers
 
-          These builds are **unsigned**. Windows SmartScreen will warn on first
-          run and macOS Gatekeeper will refuse to open it, because no code signing
-          certificate is configured.
+          These builds are **not code signed by a paid certificate**. Windows
+          SmartScreen will warn on first run. macOS builds are **ad-hoc signed**,
+          which is enough to launch: macOS will say the developer cannot be
+          verified, not that the app is damaged.
 
           **An active JioHotstar account is required.** This app is a native shell
           around the official web player. It contains no content and does not
           bypass DRM.
+
+          ### macOS
+
+          Pick the DMG for your Mac: `arm64` for Apple Silicon (M1 and later),
+          `x64` for Intel. On first launch, macOS blocks the app; allow it in
+          **System Settings → Privacy & Security → Open Anyway**, or clear the
+          quarantine flag:
+
+          ```bash
+          xattr -cr /Applications/JioHotstar.app
+          ```
+
+          **macOS builds do not update themselves.** The in-app updater is disabled
+          there, because an ad-hoc signature cannot satisfy the signature check
+          that the macOS updater performs on a downloaded update. Download each new
+          version from this releases page.
 
           ### Verifying the download
 
@@ -211,6 +247,7 @@ jobs:
           ```
 
           On Windows, compare with `Get-FileHash <file> -Algorithm SHA256`.
+          On macOS, use `shasum -a 256 <file>`.
           NOTES
           } > release-notes.md
 
@@ -218,17 +255,6 @@ jobs:
             --title "JioHotstar Desktop $TAG" \
             --notes-file release-notes.md \
             artifacts/*
-
-      - name: Release summary
-        run: |
-          echo "### Release ${{ github.ref_name }} published" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| File | Size |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          cd artifacts
-          for f in *; do
-            echo "| $f | $(du -h "$f" | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
-          done
 
       - name: Release summary
         run: |

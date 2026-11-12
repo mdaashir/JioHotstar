@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **macOS builds.** Two DMGs are published per release: `arm64` for Apple
+  Silicon and `x64` for Intel, built on matching GitHub runners.
+- **Free ad-hoc signing on macOS**, so the app actually launches. An unsigned
+  bundle is reported as "damaged and can't be opened" on Apple Silicon with no
+  way around it; an ad-hoc signature produces the ordinary "unidentified
+  developer" prompt, which the user can allow.
+
+### Notes
+
+- **macOS does not self-update.** Squirrel.Mac checks a downloaded update against
+  the running build's signature, and an ad-hoc signature is specific to one
+  build, so the check would always fail after the download. The updater is
+  disabled on macOS and the UI says to get new versions from the releases page.
+  Windows and Linux are unaffected.
+
 ## [0.1.4] - 2026-11-12
 
 **Fixes the DNS filter toggle, which was unusable in 0.1.3.** Nothing else
