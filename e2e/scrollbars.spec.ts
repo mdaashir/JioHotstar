@@ -62,7 +62,10 @@ test('keeps the scrollbar when the preference is off', async () => {
 
     const metrics = await scrollMetrics(player)
 
-    expect(metrics.scrollbarGutter).toBeGreaterThan(0)
+    // The computed style is the real signal: with the preference off the
+    // stylesheet must not be applied. Gutter width is deliberately not asserted,
+    // because Linux desktops commonly use overlay scrollbars that reserve no
+    // layout space, which would fail a correct build.
     expect(metrics.scrollbarWidthStyle).not.toBe('none')
   } finally {
     await app.close()
