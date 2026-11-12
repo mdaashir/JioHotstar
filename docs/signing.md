@@ -123,25 +123,55 @@ needs all of:
 Without notarization, Gatekeeper refuses to open the app on any machine that did
 not build it.
 
-### macOS also cannot be built here
+#### What we ship instead: ad-hoc signing
 
-```
-$ npm run dist:mac
-⨯ Build for macOS is supported only on macOS
-```
+macOS builds are **ad-hoc signed** (`mac.identity: "-"`). This is the free
+option, and it is not the same as leaving the build unsigned:
 
-`electron-builder` refuses outright on Windows. This is not a configuration
-problem to solve. The only routes to a macOS artifact are:
+| Approach                 | Result on Apple Silicon                               |
+| ------------------------ | ----------------------------------------------------- |
+| `identity: null` (skip)  | "damaged and can't be opened" — **no bypass exists**  |
+| `identity: "-"` (ad-hoc) | "unidentified developer" — user allows it in Settings |
 
-- a `macos-latest` runner in CI, or
-- building locally on a Mac.
+An unsigned bundle has only linker-provided signatures with no sealed resources,
+which macOS treats as corrupt. Ad-hoc signing runs the real signing pipeline, so
+the bundle is structurally valid. It is the difference between a scary dialog and
+an unusable app.
 
-Both still need the Apple credentials above to produce something a user can open.
+Ad-hoc signing requires `com.apple.security.cs.disable-library-validation` when
+hardened runtime is on, because Electron's pre-built frameworks carry Apple's
+Team ID. That entitlement is already in `build/entitlements.mac.plist`.
 
-Note that the `electronDist` setting makes packaging same-platform only, so a
-macOS runner also needs the macOS ECS distribution installed there. Switching to
-`electronDownload` with the castlabs mirror would allow cross-platform packaging
-but changes how the Electron build is sourced.
+#### macOS cannot self-update, and that is a signing consequence
+
+Squirrel.Mac validates a downloaded update against the **running** app's
+code-signing designated requirement. An ad-hoc signature is a cdhash of that
+exact build, so the requirement never matches the next version and every update
+fails with `code signature did not pass validation` — after the download has
+already completed.
+
+`canCheckForUpdates` therefore returns false on `darwin`, and the UI says to
+update from the releases page. This is deliberate: the alternative is a Restart
+button that always fails. A paid Developer ID certificate would make self-update
+work, because then the designated requirement is the Team ID rather than one
+build's hash.
+
+### macOS now builds in CI
+
+Two jobs, because `electronDist` packages the Electron distribution installed on
+the runner and that is a single architecture:
+
+| Runner           | Arch  | Asset                            |
+| ---------------- | ----- | -------------------------------- |
+| `macos-latest`   | arm64 | `JioHotstar-<version>-arm64.dmg` |
+| `macos-15-intel` | x64   | `JioHotstar-<version>-x64.dmg`   |
+
+Note that `macos-13` is retired and `macos-14` was retired on 2026-11-02; the
+Intel label is `macos-15-intel`. GitHub has announced that Intel macOS runners
+end in Fall 2027, so the x64 job has a finite life.
+
+A universal binary is possible in principle but needs both Electron
+distributions merged, which electron-builder cannot do from one `electronDist`.
 
 ## What is set up in this repository today
 
@@ -150,18 +180,24 @@ but changes how the Electron build is sourced.
 | VMP dev signatures              | Present — ECS builds ship pre-signed for development |
 | EVS production VMP signing      | **Not set up** — needs an EVS account                |
 | Windows Authenticode            | **Not set up** — needs a paid certificate            |
-| macOS Apple Developer signing   | **Not set up** — needs a paid membership             |
-| macOS notarization              | **Not set up**                                       |
+| macOS ad-hoc signing            | **Configured** — `mac.identity: "-"`, free           |
+| macOS Developer ID signing      | **Not set up** — needs a paid membership             |
+| macOS notarization              | **Not set up** — requires Developer ID               |
 | macOS entitlement for the CDM   | Configured in `build/entitlements.mac.plist`         |
-| macOS build runner              | **Absent** — cannot build on Windows                 |
+| macOS build runner              | **Two jobs** — arm64 and x64 in the release workflow |
+| macOS self-update               | **Disabled** — ad-hoc signature cannot satisfy it    |
+| Windows/Linux self-update       | Yes — validated end to end from 0.1.3 to 0.1.4       |
 | Checksums published per release | Yes — `SHA256SUMS.txt`                               |
 
 ## Verification checklist for a signed build
 
-1. `electron-updater` sees the release (already validated against `v0.1.2`).
+1. `electron-updater` sees the release (validated end to end: an installed 0.1.3
+   found, downloaded and installed 0.1.4).
 2. SmartScreen shows the publisher name, not "unknown publisher".
-3. `spctl --assess --type execute JioHotstar.app` passes on macOS.
-4. The VMP Lab reports `PLATFORM_SOFTWARE_VERIFIED` or better.
-5. Sign in to a real JioHotstar account and confirm a title plays. This has still
-   never been done — it is the one open question that signing research cannot
-   answer.
+3. `spctl --assess --type execute JioHotstar.app` passes on macOS — this needs
+   Developer ID; an ad-hoc build still reports "unnotarized" here.
+4. `codesign --verify --deep --strict JioHotstar.app` passes on an ad-hoc build
+   (it verifies structure, not trust).
+5. The VMP Lab reports `PLATFORM_SOFTWARE_VERIFIED` or better.
+6. Sign in to a real JioHotstar account and confirm a title plays — **done**,
+   confirmed working on the Windows build.
