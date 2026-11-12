@@ -116,6 +116,15 @@ jobs:
           }
 
       - name: Build the macOS dmg
+        # electron-builder skips ALL macOS signing on a pull_request event:
+        # `isPullRequest()` sees GITHUB_BASE_REF and `isSignAllowed()` returns
+        # false, leaving only the linker's own signature — which is the
+        # "damaged and can't be opened" state this job exists to catch. The
+        # escape hatch exists for the opposite reason (not leaking a real
+        # certificate to forks), and there is no certificate here: signing is
+        # ad-hoc (`mac.identity: "-"`), so forcing it exposes nothing.
+        env:
+          CSC_FOR_PULL_REQUEST: 'true'
         run: npm run dist:mac:arm64
 
       - name: Check the app bundle was signed

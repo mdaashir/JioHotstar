@@ -10,9 +10,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **macOS packaging is checked on every pull request.** A new `package (macos)`
   job runs the same `dist:mac:arm64` command the release uses, then asserts the
-  app bundle carries an ad-hoc signature and that a DMG was produced. Previously a
-  broken packaging config was only discovered by the release workflow, with a tag
-  already pushed.
+  app bundle carries an ad-hoc signature that verifies, and that a DMG was produced.
+  Previously a broken packaging config was only discovered by the release workflow,
+  with a tag already pushed.
+
+  Building this job turned up a real trap: `electron-builder` skips **all** macOS
+  signing on `pull_request` events, leaving only the linker's own signature — which
+  is precisely the unsigned state that macOS reports as "damaged and can't be
+  opened". The job sets `CSC_FOR_PULL_REQUEST=true` (safe: there is no certificate
+  to leak, signing is ad-hoc), and the release workflow now asserts the signature
+  too rather than trusting that signing happened.
 
 ### Security
 
