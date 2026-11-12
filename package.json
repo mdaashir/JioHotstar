@@ -1,9 +1,38 @@
 {
   "name": "jiohotstar-desktop",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
-  "description": "Desktop shell for the official JioHotstar web player",
+  "description": "Unofficial desktop app for JioHotstar on Windows, macOS and Linux, built as an Electron shell around the official web player with Widevine DRM.",
+  "keywords": [
+    "jiohotstar",
+    "hotstar",
+    "desktop-app",
+    "electron",
+    "electron-app",
+    "electron-builder",
+    "widevine",
+    "drm",
+    "castlabs",
+    "streaming",
+    "video-player",
+    "picture-in-picture",
+    "media-keys",
+    "macos",
+    "windows",
+    "linux",
+    "typescript",
+    "react"
+  ],
   "author": "mdaashir",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mdaashir/JioHotstar.git"
+  },
+  "homepage": "https://github.com/mdaashir/JioHotstar#readme",
+  "bugs": {
+    "url": "https://github.com/mdaashir/JioHotstar/issues"
+  },
   "main": "out/main/index.js",
   "engines": {
     "node": ">=22"

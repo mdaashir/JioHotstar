@@ -1,6 +1,35 @@
 # JioHotstar Desktop
 
-A native desktop shell around the official JioHotstar web player. The app owns the window, not the content: the player and account flow are the official site, loaded as remote web content with a Widevine-capable Electron build.
+**An unofficial desktop app for JioHotstar on Windows, macOS and Linux.**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/mdaashir/JioHotstar)](https://github.com/mdaashir/JioHotstar/releases/latest)
+
+A native desktop shell around the official JioHotstar web player, so you can watch
+with a real window instead of a browser tab: picture-in-picture, media keys, fullscreen,
+a system tray, and no browser chrome. Available for Windows (installer), macOS (Apple
+Silicon and Intel) and Linux (AppImage).
+
+The app owns the window, not the content: the player and account flow are the official
+site, loaded as remote web content in a Widevine-capable Electron build. There is no
+copy of anything, and no separate account.
+
+## Download
+
+Get the latest build from the [**Releases page**](https://github.com/mdaashir/JioHotstar/releases/latest).
+
+| Platform              | File                             | Notes                                                       |
+| --------------------- | -------------------------------- | ----------------------------------------------------------- |
+| Windows 10/11 (x64)   | `JioHotstar-Setup-<version>.exe` | Installer. SmartScreen warns: the build is not signed.      |
+| macOS (Apple Silicon) | `JioHotstar-<version>-arm64.dmg` | M1 and later. Ad-hoc signed, so macOS asks you to allow it. |
+| macOS (Intel)         | `JioHotstar-<version>-x64.dmg`   | Pre-2020 Macs.                                              |
+| Linux (x64)           | `JioHotstar-<version>.AppImage`  | `chmod +x` then run.                                        |
+
+Each release publishes `SHA256SUMS.txt`; every file is built from that tag by GitHub
+Actions. The builds are not code signed by a paid certificate, which is why the
+operating system shows a warning on first launch — see [Signing](#signing).
+
+An active JioHotstar account is required to watch anything.
 
 ## Scope and guardrails
 
@@ -290,3 +319,14 @@ The app opens a splash window, prepares the Widevine component, then hands off t
 2. `components.whenReady()` installs or verifies the Widevine CDM (up to 60 seconds).
 3. The player window loads `https://www.jiohotstar.com/`, which redirects to `hotstar.com`.
 4. The splash closes once the player has painted, or an error screen replaces it if either step fails.
+
+## License
+
+[MIT](LICENSE) © 2026 mdaashir.
+
+The code in this repository is MIT licensed. That covers the desktop shell itself,
+not the content it displays: JioHotstar, Hotstar, the JioHotstar logo and all
+programming are the property of their respective owners and are not distributed
+here. This is an unofficial project with no affiliation to JioHotstar, Disney+ Hotstar
+or Star India. An active subscription is required to watch anything, and the app
+does not bypass DRM or any access control.

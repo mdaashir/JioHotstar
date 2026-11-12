@@ -6,22 +6,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-12
+
+**The first release with macOS builds.** Windows and Linux are unchanged.
+
 ### Added
 
-- **macOS builds.** Two DMGs are published per release: `arm64` for Apple
-  Silicon and `x64` for Intel, built on matching GitHub runners.
-- **Free ad-hoc signing on macOS**, so the app actually launches. An unsigned
-  bundle is reported as "damaged and can't be opened" on Apple Silicon with no
-  way around it; an ad-hoc signature produces the ordinary "unidentified
+- **macOS builds.** Two DMGs per release: `arm64` for Apple Silicon and `x64` for
+  Intel, each built on a matching GitHub runner.
+- **Free ad-hoc signing on macOS**, which is what makes the app launchable. An
+  unsigned bundle is reported as "damaged and can't be opened" on Apple Silicon
+  with no way around it; an ad-hoc signature produces the ordinary "unidentified
   developer" prompt, which the user can allow.
 
 ### Notes
 
 - **macOS does not self-update.** Squirrel.Mac checks a downloaded update against
-  the running build's signature, and an ad-hoc signature is specific to one
-  build, so the check would always fail after the download. The updater is
-  disabled on macOS and the UI says to get new versions from the releases page.
-  Windows and Linux are unaffected.
+  the running build's signature, and an ad-hoc signature is specific to one build,
+  so the check would always fail after the download. The updater is disabled on
+  macOS and the UI points at the releases page. A paid Apple Developer ID would fix
+  it. Windows and Linux are unaffected.
+- **This is the first release built on macOS runners**, so the macOS jobs are
+  exercised for the first time here.
 
 ## [0.1.4] - 2026-11-12
 
@@ -221,7 +227,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...v0.1.2
