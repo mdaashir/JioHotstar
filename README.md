@@ -37,17 +37,26 @@ Windows is in the `verify` matrix on purpose: the line-ending failure that once 
 
 Merging is routine; tagging is deliberate. `release.yml` runs only on `v*` tags, so publishing an installer is always an explicit act.
 
+The gate runs **format, lint, type-check, unit tests, build, and the full e2e suite** before anything is packaged. `npm run verify` alone never launches the app, so on its own it would happily pass a commit whose window opens but cannot play.
+
 ```bash
-git tag v0.2.0
+# 1. Move entries from [Unreleased] into a new version heading in CHANGELOG.md.
+# 2. Commit and merge that, and confirm CI is green on main.
+git tag -a v0.2.0 -m "JioHotstar Desktop v0.2.0"
 git push origin v0.2.0
 ```
 
-The installer version comes from the tag rather than `package.json`, so the two cannot disagree. Release builds are **unsigned**: Windows SmartScreen warns on first run and macOS Gatekeeper refuses to open the app. The release notes say so rather than implying the builds are signed.
+Use an **annotated** tag (`-a`): it records the tagger, date, and message, appears in `git describe`, and is what a real release should be built from rather than a bare ref.
+
+The installer version comes from the tag rather than `package.json`, so the two cannot disagree. The release body is extracted from `CHANGELOG.md` by `scripts/changelog-section.mjs`, so the Release page and the committed changelog cannot drift apart — a missing or empty entry fails the release instead of publishing blank notes.
+
+Release builds are **unsigned**: Windows SmartScreen warns on first run and macOS Gatekeeper refuses to open the app. The release notes say so rather than implying the builds are signed.
 
 ### Dependabot exclusions
 
 - **`electron`** is excluded. It is pinned to a Castlabs ECS build with Widevine, and a registry bump would silently break DRM playback. That decision is made by hand.
-- **`vite` / `electron-vite`** are excluded from major bumps; they move together with the React plugin and conflict when bumped alone.
+- **`vite` / `electron-vite` / `@vitejs/plugin-react`** majors are excluded; they move together and conflict when bumped alone.
+- **`electron-store`** majors are excluded. Version 9 and later are ESM-only while the main process is CommonJS, so the app fails at startup with `Store is not a constructor`.
 
 The Electron binary is fetched lazily on first launch rather than by `postinstall`, so it is cached under `~/.cache/electron` (Linux) or `%LOCALAPPDATA%\electron\Cache` (Windows) between runs.
 
