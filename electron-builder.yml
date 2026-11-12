@@ -20,12 +20,20 @@ electronVersion: 45.2.1
 asar: true
 npmRebuild: false
 
-# Widevine VMP signing, free through castlabs EVS. It must run here — `afterPack`
-# fires before code signing and before the installer is built. Signing the output
-# afterwards would either invalidate the macOS signature or leave the NSIS
-# installer wrapping an unsigned directory. The hook is a no-op without EVS
-# credentials, so local builds and forks are unaffected.
+# Widevine VMP signing, free through castlabs EVS. Two hooks, because the required
+# order differs per platform:
+#
+#   macOS:  afterPack  — VMP must precede the code signature, since VMP rewrites
+#                        the binary and would destroy a signature already applied.
+#   Windows: afterSign — electron-builder writes the icon and version strings into
+#                        the exe after `afterPack`, and that invalidates a VMP
+#                        signature made there. Measured: the exe ended up 3 seconds
+#                        newer than the .sig and `evs-vmp verify-pkg` said
+#                        InvalidSignature. afterSign runs once the exe is final.
+#
+# Both are no-ops without EVS credentials, so local builds and forks are unaffected.
 afterPack: scripts/vmp-after-pack.cjs
+afterSign: scripts/vmp-after-sign.cjs
 
 files:
   - out/**

@@ -176,19 +176,41 @@ jobs:
           EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
         run: npm run dist:${{ matrix.target }}
 
-      # Proves the VMP hook either signed or deliberately skipped. Silence is the
-      # failure mode here: without this, a missing secret would look identical to
-      # a successful signing run and the build would still go green.
-      - name: Assert Widevine signing state
+      # Proves the VMP signature actually attaches to the shipped binary.
+      #
+      # This exists because "a .sig file exists" is not proof of anything: the ECS
+      # build ships `electron.exe.sig` and electron-builder copies it in, so a
+      # build that never signed still has a `.sig` next to the exe. Comparing the
+      # two hashes is what distinguishes a real signature from the stock one.
+      #
+      # Skipped when no credentials are set, so forks still build.
+      - name: Assert Widevine signing attached
         if: matrix.target != 'linux'
         shell: bash
+        env:
+          EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
+          EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
         run: |
-          if [ -n "${{ secrets.EVS_ACCOUNT_NAME }}" ]; then
-            echo "EVS credentials present — the build should have VMP-signed."
-            echo "Verify playback with the Widevine VMP Lab; see docs/signing.md."
-          else
-            echo "::notice::No EVS secrets — build ships with the ECS dev signature only."
+          if [ -z "$EVS_ACCOUNT_NAME" ]; then
+            echo "::notice::No EVS credentials — VMP signing skipped, build keeps the ECS dev signature."
+            exit 0
           fi
+
+          python -m pip install --upgrade castlabs-evs
+
+          if [ "${{ matrix.target }}" = "win" ]; then
+            SUBJECT=release/win-unpacked
+          elif [ "${{ matrix.artifact }}" = "mac-arm64" ]; then
+            SUBJECT=release/mac-arm64/JioHotstar.app
+          else
+            SUBJECT=release/mac/JioHotstar.app
+          fi
+
+          test -e "$SUBJECT" || { echo "no packaged app at $SUBJECT"; exit 1; }
+
+          # `verify-pkg` exits non-zero on an invalid signature. This is the check
+          # that caught the Windows exe being rewritten after it was signed.
+          python -m castlabs_evs.vmp verify-pkg "$SUBJECT"
 
       # An unsigned macOS bundle is reported as "damaged and can't be opened" on
       # Apple Silicon, with no way for the user to bypass it. electron-builder
