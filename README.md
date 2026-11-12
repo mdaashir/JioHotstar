@@ -52,12 +52,11 @@ npm run dev
 
 ## Continuous integration and releases
 
-| Workflow          | Trigger                                                         | What it does                                                                                  |
-| ----------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `ci.yml`          | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu, Windows **and** macOS; `package` on all three; `e2e` on Ubuntu            |
-| `release.yml`     | Pushing a `v*` tag                                              | Gates on `verify`, builds Windows, Linux, and macOS (arm64 + x64), publishes a GitHub Release |
-| `evs-account.yml` | Manual, from the Actions tab                                    | One-off helper to create and confirm the castlabs EVS signing account                         |
-| `dependabot.yml`  | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                               |
+| Workflow         | Trigger                                                         | What it does                                                                                  |
+| ---------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu, Windows **and** macOS; `package` on all three; `e2e` on Ubuntu            |
+| `release.yml`    | Pushing a `v*` tag                                              | Gates on `verify`, builds Windows, Linux, and macOS (arm64 + x64), publishes a GitHub Release |
+| `dependabot.yml` | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                               |
 
 Windows is in the `verify` matrix on purpose: the line-ending failure that once made the whole repo look unformatted only appears there.
 
