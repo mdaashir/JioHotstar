@@ -154,11 +154,12 @@ jobs:
 
       - name: Install the EVS client
         if: matrix.target != 'linux'
+        shell: bash
         env:
           EVS_ACCOUNT_NAME: ${{ secrets.EVS_ACCOUNT_NAME }}
         run: |
           if [ -z "$EVS_ACCOUNT_NAME" ]; then
-            echo "EVS secrets are not set — the afterPack hook will skip signing."
+            echo "EVS secrets are not set — the hooks will skip signing."
             exit 0
           fi
           python -m pip install --upgrade castlabs-evs
