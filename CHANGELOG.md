@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-11-12
+
+A security fix in the IPC sender guard, and the CI that caught a macOS packaging
+trap along the way. No user-facing changes.
+
+### Security
+
+- **The IPC sender guard now trusts exactly one local file, not every `file://`
+  URL.** `isAppUrl` compared with `startsWith('file://')`, so any local document
+  counted as an app window. It now parses the URL, ignores the hash route, and
+  compares the decoded path against the bundled `out/renderer/index.html` — with
+  case-insensitive matching only on Windows, where the filesystem is. A copy of
+  `index.html` planted elsewhere on disk no longer qualifies, and neither does a
+  sibling file such as `index.html.bak`.
+
+  Nothing reachable depended on the old behaviour: remote pages cannot set a
+  `file://` location, and navigation is host-allow-listed regardless. This is
+  hardening, and it removes a rule that was broader than it needed to be.
+
 ### Added
 
 - **macOS packaging is checked on every pull request.** A new `package (macos)`
@@ -20,16 +39,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opened". The job sets `CSC_FOR_PULL_REQUEST=true` (safe: there is no certificate
   to leak, signing is ad-hoc), and the release workflow now asserts the signature
   too rather than trusting that signing happened.
-
-### Security
-
-- **The IPC sender guard now trusts exactly one local file, not every `file://`
-  URL.** `isAppUrl` compared with `startsWith('file://')`, so any local document
-  counted as an app window. It now parses the URL, ignores the hash route, and
-  compares the decoded path against the bundled `out/renderer/index.html` — with
-  case-insensitive matching only on Windows, where the filesystem is. A copy of
-  `index.html` planted elsewhere on disk no longer qualifies, and neither does a
-  sibling file such as `index.html.bak`.
 
 ## [0.1.5] - 2026-11-12
 
@@ -252,7 +261,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/mdaashir/JioHotstar/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mdaashir/JioHotstar/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mdaashir/JioHotstar/compare/v0.1.2...v0.1.3
