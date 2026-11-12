@@ -21,7 +21,16 @@ export function installScrollbarHiding(window: BrowserWindow): ScrollbarControll
       return
     }
 
-    key = await contents.insertCSS(HIDE_SCROLLBARS_CSS, { cssOrigin: 'user' })
+    // `insertCSS` throws "Render frame was disposed before WebFrameMain could be
+    // accessed" when the document goes away between `did-finish-load` and this
+    // call — which happens on a redirect, and the player page redirects once.
+    // An unhandled rejection here crashed the packaged app at startup.
+    try {
+      key = await contents.insertCSS(HIDE_SCROLLBARS_CSS, { cssOrigin: 'user' })
+    } catch {
+      // The document is gone; the next load will re-apply the stylesheet.
+      key = null
+    }
   }
 
   const clear = async (): Promise<void> => {
