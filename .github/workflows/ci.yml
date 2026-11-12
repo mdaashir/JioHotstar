@@ -68,6 +68,102 @@ jobs:
           echo "If only formatting failed on Windows, it is line endings:"
           echo "  git config core.autocrlf false"
 
+  # `verify` never runs electron-builder, so a broken packaging config — a bad
+  # `electron-builder.yml` key, a missing entitlement, an icon the target cannot
+  # use — would first be discovered by the release workflow, with a tag already
+  # pushed. This job runs the exact command the release runs, minus publishing.
+  #
+  # macOS only, not all three: it is the platform with no other packaging check,
+  # it is where signing runs (ad-hoc, so it exercises `identity: "-"` and the
+  # entitlements), and hdiutil makes DMG creation the most failure-prone target.
+  # Windows and Linux have been packaged successfully on every release so far.
+  package:
+    name: package (macos)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache the Electron binary
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Caches/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci --include=dev
+
+      # Same requirement as the release workflow: ECS downloads its Electron
+      # binary lazily on first launch, so `electronDist` does not exist until
+      # something resolves the module. Requiring it is enough.
+      - name: Download the Electron binary
+        run: node -e "console.log(require('electron'))"
+
+      - name: Verify the Electron binary is present
+        run: |
+          test -d node_modules/electron/dist || {
+            echo "node_modules/electron/dist is missing after the download step"
+            exit 1
+          }
+
+      - name: Build the macOS dmg
+        # electron-builder skips ALL macOS signing on a pull_request event:
+        # `isPullRequest()` sees GITHUB_BASE_REF and `isSignAllowed()` returns
+        # false, leaving only the linker's own signature — which is the
+        # "damaged and can't be opened" state this job exists to catch. The
+        # escape hatch exists for the opposite reason (not leaking a real
+        # certificate to forks), and there is no certificate here: signing is
+        # ad-hoc (`mac.identity: "-"`), so forcing it exposes nothing.
+        env:
+          CSC_FOR_PULL_REQUEST: 'true'
+        run: npm run dist:mac:arm64
+
+      - name: Check the app bundle was signed
+        run: |
+          APP=$(find release -maxdepth 2 -name 'JioHotstar.app' -print -quit)
+          test -n "$APP" || { echo "no JioHotstar.app produced under release/"; ls -R release | head -40; exit 1; }
+          echo "app bundle: $APP"
+
+          # Ad-hoc signing is the configured behaviour and the difference between
+          # launching and "damaged and can't be opened", so assert it directly.
+          codesign --display --verbose=2 "$APP" 2>&1 | tee codesign.txt
+          grep -q 'Signature=adhoc' codesign.txt || {
+            echo "expected an ad-hoc signature (mac.identity: \"-\")"
+            exit 1
+          }
+
+          # Structural check of the bundle itself. `--deep` is deliberately not
+          # used: it is deprecated and reports false failures on Electron's nested
+          # frameworks, which would make this job flaky rather than useful.
+          codesign --verify --strict "$APP"
+          echo "ad-hoc signature present and bundle verifies"
+
+      - name: Check the dmg exists
+        run: |
+          ls -lh release/*.dmg
+          test -n "$(find release -maxdepth 1 -name '*.dmg' -print -quit)"
+
+      - name: Upload the dmg on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-packaging-failure
+          path: |
+            release/*.dmg
+            release/builder-debug.yml
+            release/*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
   e2e:
     name: e2e (ubuntu)
     runs-on: ubuntu-latest

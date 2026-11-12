@@ -132,6 +132,26 @@ jobs:
       - name: Build ${{ matrix.artifact }} installer
         run: npm run dist:${{ matrix.target }}
 
+      # An unsigned macOS bundle is reported as "damaged and can't be opened" on
+      # Apple Silicon, with no way for the user to bypass it. electron-builder
+      # already skips all signing on pull_request events, so this asserts the
+      # release path really did apply the ad-hoc signature rather than trusting
+      # that it did — a silent regression here ships an unopenable app.
+      - name: Assert the macOS bundle is ad-hoc signed
+        if: matrix.target == 'mac:arm64' || matrix.target == 'mac:x64'
+        shell: bash
+        run: |
+          APP=$(find release -maxdepth 2 -name 'JioHotstar.app' -print -quit)
+          test -n "$APP" || { echo "no JioHotstar.app under release/"; exit 1; }
+
+          codesign --display --verbose=2 "$APP" 2>&1 | tee codesign.txt
+          grep -q 'Signature=adhoc' codesign.txt || {
+            echo "macOS bundle is not ad-hoc signed; it will not launch"
+            exit 1
+          }
+          codesign --verify --strict "$APP"
+          echo "ad-hoc signature present on $APP"
+
       - name: Upload installer
         uses: actions/upload-artifact@v7
         with:
