@@ -1,0 +1,161 @@
+name: release
+
+# Releases are cut by pushing a tag, not by merging. Merging is routine; a tag is
+# a deliberate act, and it is the only thing that should publish an installer.
+#
+#   git tag v0.2.0
+#   git push origin v0.2.0
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Gate every release on the same checks a pull request gets. Tagging a commit
+  # that never passed CI should not produce an installer.
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci --include=dev
+
+      - name: Verify
+        run: npm run verify
+
+  build:
+    name: build (${{ matrix.artifact }})
+    needs: gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # electron-builder is configured with `electronDist`, which packages
+          # the Electron distribution installed on the runner. That only works
+          # on a matching platform, so each artifact is built on its own OS.
+          - os: windows-latest
+            target: win
+            artifact: windows
+          - os: ubuntu-latest
+            target: linux
+            artifact: linux
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci --include=dev
+
+      # The version in the installer comes from the tag, so a release can never
+      # be built from a commit whose package.json disagrees with the tag. This
+      # edits package.json in the runner only; nothing is committed.
+      - name: Align package version with the tag
+        shell: bash
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+
+      - name: Build ${{ matrix.artifact }} installer
+        run: npm run dist:${{ matrix.target }}
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.artifact }}
+          path: |
+            release/*.exe
+            release/*.blockmap
+            release/*.AppImage
+            release/latest*.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: installer-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          # Drop the auto-update metadata and blockmaps: they are for the updater,
+          # not something a user downloads by hand.
+          rm -f latest*.yml *.blockmap
+          sha256sum * > SHA256SUMS.txt
+          echo "--- artifacts ---"
+          ls -lh
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'NOTES'
+          ## Installers
+
+          These builds are **unsigned**. Windows SmartScreen will warn on first
+          run and macOS Gatekeeper will refuse to open it, because no code signing
+          certificate is configured.
+
+          **An active JioHotstar account is required.** This app is a native shell
+          around the official web player. It contains no content and does not
+          bypass DRM.
+
+          ### Verifying the download
+
+          Each file is built from this tag by GitHub Actions. Check it against
+          `SHA256SUMS.txt`:
+
+          ```bash
+          sha256sum -c SHA256SUMS.txt
+          ```
+
+          On Windows, compare with `Get-FileHash <file> -Algorithm SHA256`.
+          NOTES
+
+          gh release create "$TAG" \
+            --title "JioHotstar Desktop $TAG" \
+            --generate-notes \
+            --notes-file notes.md \
+            artifacts/*
+
+      - name: Release summary
+        run: |
+          echo "### Release ${{ github.ref_name }} published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Size |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          cd artifacts
+          for f in *; do
+            echo "| $f | $(du -h "$f" | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
+          done
