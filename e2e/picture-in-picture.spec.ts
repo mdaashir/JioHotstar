@@ -59,10 +59,16 @@ async function playSyntheticVideo(player: Page): Promise<void> {
 }
 
 async function pipState(player: Page) {
-  return player.evaluate(() => ({
-    inPip: document.pictureInPictureElement !== null,
-    videoCount: document.querySelectorAll('video').length
-  }))
+  return player.evaluate(() => {
+    const videos = [...document.querySelectorAll('video')]
+
+    return {
+      inPip: document.pictureInPictureElement !== null,
+      // The PiP script skips videos with `readyState === 0`, so counting nodes is
+      // not enough — wait for a frame to actually be decoded and playing.
+      playing: videos.some((video) => !video.paused && video.readyState > 0)
+    }
+  })
 }
 
 test('toggles native picture-in-picture for the active video', async () => {
@@ -75,15 +81,19 @@ test('toggles native picture-in-picture for the active video', async () => {
     await player.waitForTimeout(1500)
 
     await playSyntheticVideo(player)
-    await expect.poll(async () => (await pipState(player)).videoCount).toBeGreaterThan(0)
+
+    // Gate on a decoded, playing video. Firing the shortcut while the canvas
+    // stream is still warming up makes the injected script report `no-video`
+    // and nothing toggles — which is the flake this test used to have.
+    await expect.poll(async () => (await pipState(player)).playing, { timeout: 20_000 }).toBe(true)
 
     expect((await pipState(player)).inPip).toBe(false)
 
     await sendKey(app, 'P', ['control', 'shift'])
-    await expect.poll(async () => (await pipState(player)).inPip).toBe(true)
+    await expect.poll(async () => (await pipState(player)).inPip, { timeout: 20_000 }).toBe(true)
 
     await sendKey(app, 'P', ['control', 'shift'])
-    await expect.poll(async () => (await pipState(player)).inPip).toBe(false)
+    await expect.poll(async () => (await pipState(player)).inPip, { timeout: 20_000 }).toBe(false)
   } finally {
     await app.close()
   }
