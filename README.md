@@ -2,6 +2,9 @@
 
 **An unofficial desktop app for JioHotstar on Windows, macOS and Linux.**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/mdaashir/JioHotstar)](https://github.com/mdaashir/JioHotstar/releases/latest)
+
 A native desktop shell around the official JioHotstar web player, so you can watch
 with a real window instead of a browser tab: picture-in-picture, media keys, fullscreen,
 a system tray, and no browser chrome. Available for Windows (installer), macOS (Apple
@@ -316,3 +319,14 @@ The app opens a splash window, prepares the Widevine component, then hands off t
 2. `components.whenReady()` installs or verifies the Widevine CDM (up to 60 seconds).
 3. The player window loads `https://www.jiohotstar.com/`, which redirects to `hotstar.com`.
 4. The splash closes once the player has painted, or an error screen replaces it if either step fails.
+
+## License
+
+[MIT](LICENSE) © 2026 mdaashir.
+
+The code in this repository is MIT licensed. That covers the desktop shell itself,
+not the content it displays: JioHotstar, Hotstar, the JioHotstar logo and all
+programming are the property of their respective owners and are not distributed
+here. This is an unofficial project with no affiliation to JioHotstar, Disney+ Hotstar
+or Star India. An active subscription is required to watch anything, and the app
+does not bypass DRM or any access control.

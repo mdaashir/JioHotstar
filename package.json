@@ -24,6 +24,7 @@
     "react"
   ],
   "author": "mdaashir",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mdaashir/JioHotstar.git"

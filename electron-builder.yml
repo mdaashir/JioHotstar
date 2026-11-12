@@ -1,6 +1,6 @@
 appId: com.jiohotstar.desktop
 productName: JioHotstar
-copyright: Copyright © 2026
+copyright: Copyright © 2026 mdaashir
 
 # The updater reads this feed. Assets are attached by the release workflow,
 # which runs electron-builder with --publish never and creates the Release with
