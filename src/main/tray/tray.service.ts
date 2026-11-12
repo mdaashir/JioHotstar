@@ -1,8 +1,10 @@
 import { Menu, Tray, app } from 'electron'
 import { APP_NAME } from '../../shared/constants'
 import { trayLabels } from '../../shared/tray'
+import { describeState, isRestartAction, type UpdateState } from '../../shared/updater'
 import { appIcon } from '../app.icon'
 import { settingsStore } from '../store/settings.store'
+import { updaterService } from '../updater/updater.service'
 import type { WindowManager } from '../window/window.manager'
 
 const TRAY_TOOLTIP = APP_NAME
@@ -36,6 +38,7 @@ export class TrayService {
   private tray: Tray | null = null
   private readonly windows: WindowManager
   private noticeTimer: ReturnType<typeof setTimeout> | undefined
+  private updateState: UpdateState = { status: 'unsupported' }
 
   constructor(windows: WindowManager) {
     this.windows = windows
@@ -63,6 +66,27 @@ export class TrayService {
 
   notifyMediaKey(status: string): void {
     this.showNotice(mediaKeyNotice(status))
+  }
+
+  /**
+   * Reports meaningful update transitions and nothing else.
+   *
+   * `checking` and `not-available` are routine and would be noise on every
+   * launch; a failed check is worth surfacing because it usually means the
+   * release feed is broken rather than that the user is offline.
+   */
+  notifyUpdate(state: UpdateState): void {
+    this.updateState = state
+
+    if (state.status === 'available' || state.status === 'downloaded') {
+      this.showNotice(describeState(state))
+      this.refresh()
+      return
+    }
+
+    if (state.status === 'error') {
+      this.showNotice(describeState(state))
+    }
   }
 
   private showNotice(message: string | null): void {
@@ -136,6 +160,18 @@ export class TrayService {
             this.windows.openSettingsWindow()
           }
         },
+        // Only offered once an update is actually downloaded. Checking is silent
+        // by default, so this item is the whole visible surface of the feature.
+        ...(isRestartAction(this.updateState)
+          ? [
+              {
+                label: labels.installUpdate,
+                click: () => {
+                  updaterService.install()
+                }
+              }
+            ]
+          : []),
         { type: 'separator' },
         {
           label: labels.quit,
