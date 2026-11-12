@@ -26,8 +26,8 @@ class UpdaterService {
   init(hooks: UpdaterHooks): void {
     this.hooks = hooks
 
-    if (!canCheckForUpdates(app.isPackaged)) {
-      this.setState({ status: 'unsupported' })
+    if (!canCheckForUpdates(app.isPackaged, process.platform)) {
+      this.setState({ status: 'unsupported', message: this.unsupportedReason() })
       return
     }
 
@@ -83,7 +83,8 @@ class UpdaterService {
   async check(): Promise<UpdateState> {
     if (!this.started) {
       const state: UpdateState = {
-        status: canCheckForUpdates(app.isPackaged) ? 'error' : 'unsupported'
+        status: canCheckForUpdates(app.isPackaged, process.platform) ? 'error' : 'unsupported',
+        message: this.unsupportedReason()
       }
       this.setState(state)
       return state
@@ -123,6 +124,16 @@ class UpdaterService {
     }
 
     autoUpdater.quitAndInstall()
+  }
+
+  private unsupportedReason(): string | undefined {
+    // On macOS the build genuinely cannot update itself, and the user needs to
+    // know that the releases page is the route — not that something broke.
+    if (process.platform === 'darwin' && app.isPackaged) {
+      return 'Updates on macOS are downloaded from the releases page'
+    }
+
+    return undefined
   }
 
   private setState(state: UpdateState): void {
