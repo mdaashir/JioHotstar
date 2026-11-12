@@ -1,6 +1,6 @@
 {
   "name": "jiohotstar-desktop",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "Unofficial desktop app for JioHotstar on Windows, macOS and Linux, built as an Electron shell around the official web player with Widevine DRM.",
   "keywords": [
