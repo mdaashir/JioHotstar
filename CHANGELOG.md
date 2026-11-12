@@ -6,6 +6,42 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-12
+
+The first release that can actually be packaged. `v0.1.0` was tagged but its
+build failed, so no artifacts were ever published; that tag is left in place and
+this supersedes it.
+
+### Fixed
+
+- **Release builds failed with `The specified electronDist does not exist`.** The
+  ECS Electron binary downloads lazily on first launch rather than during
+  `postinstall`, so after a clean `npm ci` there was no
+  `node_modules/electron/dist` for `electron-builder` to package. The release
+  build now resolves the Electron module first and verifies `dist` exists before
+  running the packager.
+- **e2e raced the app's window lifecycle.** The branding test used
+  `firstWindow()`, which can return the player or a splash about to be destroyed,
+  and the window scan read URLs from webContents whose render frame had been torn
+  down (`Render frame was disposed before WebFrameMain could be accessed`). Both
+  now skip windows that disappear and match on an unambiguous marker.
+
+### Changed
+
+- The release gate runs the **full e2e suite** in addition to `verify`. `verify`
+  never launches the app, so on its own it would pass a commit whose window opens
+  but cannot play.
+- Release notes are extracted from this changelog by
+  `scripts/changelog-section.mjs`, so the Release page and the changelog cannot
+  drift apart. A missing entry fails the release rather than publishing blank
+  notes.
+
+### Known limitations
+
+Unchanged from 0.1.0: builds are unsigned, playback against real DRM content is
+still unverified with a signed-in account, only Windows and Linux artifacts are
+produced, and there is no auto-update.
+
 ## [0.1.0] - 2026-11-12
 
 First release. A native desktop shell around the official JioHotstar web player,
@@ -79,5 +115,6 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mdaashir/JioHotstar/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mdaashir/JioHotstar/releases/tag/v0.1.0
