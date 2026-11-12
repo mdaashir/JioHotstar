@@ -12,19 +12,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   coverage macOS got in 0.1.6. Each runs the same `dist:` command the release uses
   and asserts the installer exists, so a broken packaging config fails on the PR
   rather than on a tag.
-- **Widevine VMP signing is wired into the release** through a castlabs EVS
-  `afterPack` hook. It signs Windows before NSIS packages the installer and macOS
-  before the ad-hoc signature is applied — the only ordering that works on both.
-  Without `EVS_ACCOUNT_NAME`/`EVS_PASSWD` it is a no-op, so forks and local builds
-  are unaffected.
+- **Widevine VMP signing is wired into the release** through castlabs EVS hooks, and
+  is verified rather than assumed. Two hooks, because the order is opposite per
+  platform: macOS signs in `afterPack` (VMP must precede the code signature), Windows
+  signs in `afterSign` (electron-builder rewrites the exe's icon and version strings
+  after `afterPack`, which invalidated a signature made there). Without
+  `EVS_ACCOUNT_NAME`/`EVS_PASSWD` both are no-ops, so forks and local builds work.
+
+### Fixed
+
+- **The VMP signature did not attach to the shipped Windows binary.** Signing in
+  `afterPack` produced a `.sig` that failed `evs-vmp verify-pkg` with
+  `InvalidSignature`, because electron-builder edits the exe afterwards. Moved to
+  `afterSign`, which runs once the exe is final, and a passing verification now gates
+  the release.
+
+  Worth recording: a `.sig` file existing is not evidence of signing. The ECS build
+  ships `electron.exe.sig` and electron-builder copies it in, so an unsigned build
+  looks identical by filename — only `verify-pkg` distinguishes them.
 
 ### Notes
 
-- **VMP signing needs no system Python.** The `afterPack` hook tries `uv run
---with castlabs-evs`, then `python`, then `python3`, so the same code works in CI
-  (which has `python` from setup-python) and on a machine with only uv. Account
-  creation is a one-time `uv tool install castlabs-evs` plus two commands — see
-  [docs/signing.md](docs/signing.md).
+- **VMP signing needs no system Python.** The hooks try `uv run --with castlabs-evs`,
+  then `python`, then `python3`, so the same code works in CI (which has `python` from
+  setup-python) and on a machine with only uv.
 - **32-bit builds are impossible, not skipped.** Castlabs publishes no `ia32`
   Electron for any platform, and the 32-bit line would mean Electron ≤43 without
   Widevine. See [docs/packaging-architectures.md](docs/packaging-architectures.md).

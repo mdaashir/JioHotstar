@@ -117,30 +117,58 @@ Signup is free but the account is not disposable — castlabs ask that nobody cr
 throwaway accounts, and that builds are not re-signed while an existing signature is
 still valid.
 
-To check it worked, or to sign a build by hand:
+To check a build, or to sign one by hand:
 
 ```bash
-uvx --from castlabs-evs evs-vmp sign-pkg release/win-unpacked
+# Verify — no credentials needed. Exits non-zero if the signature is invalid.
+uvx --from castlabs-evs evs-vmp verify-pkg release/win-unpacked
+
+# Sign explicitly (the build hooks do this for you).
+uvx --from castlabs-evs evs-vmp sign-pkg -A mdaashir -P "<password>" release/win-unpacked
 ```
 
-`sign-pkg` takes `-A`/`-P` and **no `--no-ask`** — only `evs-account` has that flag.
+`sign-pkg` takes `-A`/`-P` and **no `--no-ask`** — only `evs-account` and the
+top-level `evs-vmp` command have that flag.
 
-### Where signing happens, and why it is a hook
+### Where signing happens, and why it is two hooks
 
-`scripts/vmp-after-pack.cjs` is wired as electron-builder's `afterPack` hook, not as a
-separate release step. The ordering is the whole reason:
+`scripts/vmp.cjs` holds the shared logic; two thin hooks call it, because the
+required order is **opposite** on the two platforms:
 
-| Platform | Order                                                  |
-| -------- | ------------------------------------------------------ |
-| Windows  | code sign → **VMP sign** → NSIS packages the installer |
-| macOS    | **VMP sign** → code sign (ad-hoc)                      |
-| Linux    | neither; the CDM does not use VMP                      |
+| Platform | Order                                                    | Hook        |
+| -------- | -------------------------------------------------------- | ----------- |
+| Windows  | icon/version rewrite → **VMP** → NSIS packages installer | `afterSign` |
+| macOS    | **VMP** → code sign (ad-hoc)                             | `afterPack` |
+| Linux    | neither; the CDM does not use VMP                        | —           |
 
-`afterPack` fires before code signing and before the installer is built, which
-satisfies both. Signing the _output_ afterwards would be wrong on both platforms:
-on macOS it would replace the ad-hoc signature, producing the "damaged and can't be
-opened" bundle, and on Windows the `.exe` would already contain the unsigned
-directory.
+Windows cannot use `afterPack`. electron-builder's `signAndEditResources` writes the
+icon and version strings into the exe _after_ `afterPack` fires, so a signature made
+there no longer matches the shipped file. This was measured on a real build: the exe
+ended up **3 seconds newer** than the `.sig` and `evs-vmp verify-pkg` reported
+`InvalidSignature`, while the same binary signed outside the build verified with
+"Signature is valid: streaming, 1343 days left".
+
+macOS cannot use `afterSign`, for the opposite reason: VMP rewrites the binary, so a
+code signature applied first would be destroyed.
+
+### A `.sig` file proves nothing on its own
+
+The ECS Electron distribution ships `electron.exe.sig`, and electron-builder copies it
+next to the packaged exe. A build that never signed still has a `.sig` — byte-identical
+to the stock one (verified by hash comparison during development). The only reliable
+check is `verify-pkg`, which the release workflow now runs and gates on.
+
+### Upload time
+
+`sign-pkg` uploads the whole packaged binary — 238 MB for Windows, since Electron is
+bundled — so signing is network-bound and takes minutes. The defaults (50 MB parts,
+2 concurrent) took over six minutes here and stalled once at 0.6 MB/s. Raising both
+fixed it:
+
+```yaml
+EVS_MULTIPART_PART_SIZE: '80'
+EVS_MULTIPART_MAX_CONCURRENCY: '4'
+```
 
 Without `EVS_ACCOUNT_NAME` and `EVS_PASSWD` the hook logs and returns, so local
 builds and forks still work. With them set, a signing failure throws and fails the
