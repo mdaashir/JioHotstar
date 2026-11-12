@@ -21,12 +21,33 @@ npm install
 npm run dev
 ```
 
-## Continuous integration
+## Continuous integration and releases
 
-Two workflows live in `.github/workflows/`:
+| Workflow         | Trigger                                                         | What it does                                                                                   |
+| ---------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `ci.yml`         | Every pull request, and every push to `main` (including direct) | `verify` on Ubuntu **and** Windows, plus `e2e` on Ubuntu                                       |
+| `release.yml`    | Pushing a `v*` tag                                              | Gates on `verify`, builds the Windows installer and Linux AppImage, publishes a GitHub Release |
+| `dependabot.yml` | Weekly, Monday                                                  | Grouped npm updates and workflow-action updates                                                |
 
-- **`verify.yml`** runs on every pull request and on pushes to `main`, on **Ubuntu and Windows**. It runs `npm run verify` (format, lint, type-check, unit tests, build). Windows is included on purpose: the line-ending failure that once made the whole repo look unformatted only appears there. It does not launch the app, so it needs no display server.
-- **`e2e.yml`** runs on demand and nightly, not per pull request. The suite launches the real app, downloads the Widevine CDM, and loads the live JioHotstar site, so it depends on network and a display (`xvfb`). Gating pull requests on a suite with those dependencies would produce failures unrelated to the change.
+Windows is in the `verify` matrix on purpose: the line-ending failure that once made the whole repo look unformatted only appears there.
+
+`e2e` runs on every change rather than nightly. It launches the real app, downloads the Widevine CDM, and loads the live site, so it is slower and network-dependent — but it is the only check that proves playback still works, and a regression must not reach `main` unnoticed.
+
+### Releases
+
+Merging is routine; tagging is deliberate. `release.yml` runs only on `v*` tags, so publishing an installer is always an explicit act.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The installer version comes from the tag rather than `package.json`, so the two cannot disagree. Release builds are **unsigned**: Windows SmartScreen warns on first run and macOS Gatekeeper refuses to open the app. The release notes say so rather than implying the builds are signed.
+
+### Dependabot exclusions
+
+- **`electron`** is excluded. It is pinned to a Castlabs ECS build with Widevine, and a registry bump would silently break DRM playback. That decision is made by hand.
+- **`vite` / `electron-vite`** are excluded from major bumps; they move together with the React plugin and conflict when bumped alone.
 
 The Electron binary is fetched lazily on first launch rather than by `postinstall`, so it is cached under `~/.cache/electron` (Linux) or `%LOCALAPPDATA%\electron\Cache` (Windows) between runs.
 
@@ -70,12 +91,13 @@ The tray icon is the official JioHotstar mark, generated from `resources/jiohots
 
 Every icon in the app comes from one source: `resources/jiohotstar.ico`, the official mark published by JioHotstar as the site's favicon. `scripts/generate-icons.mjs` extracts the largest frame (64px, PNG-compressed) and derives the rest, so the window, taskbar, tray, installer, favicon, and splash screen cannot drift apart.
 
-| Output                                 | Size  | Used by                             |
-| -------------------------------------- | ----- | ----------------------------------- |
-| `build/icon.png`                       | 512px | Installer, `.exe`, `.dmg`, AppImage |
-| `resources/icon.png`                   | 256px | Window and taskbar icon             |
-| `resources/tray-icon.png`              | 32px  | System tray                         |
-| `src/renderer/src/assets/app-icon.png` | 128px | Splash screen and renderer favicon  |
+| Output                                 | Size     | Used by                            |
+| -------------------------------------- | -------- | ---------------------------------- |
+| `build/icon.ico`                       | 16–256px | NSIS installer and uninstaller     |
+| `build/icon.png`                       | 512px    | `.exe`, `.dmg`, AppImage           |
+| `resources/icon.png`                   | 256px    | Window and taskbar icon            |
+| `resources/tray-icon.png`              | 32px     | System tray                        |
+| `src/renderer/src/assets/app-icon.png` | 128px    | Splash screen and renderer favicon |
 
 Regenerate after changing the source icon with:
 
@@ -84,6 +106,8 @@ node scripts/generate-icons.mjs
 ```
 
 The script decodes the ICO and its PNG frames with no image dependencies, and resamples with alpha-weighted averaging so transparent edges do not darken the mark. Upscaling beyond 64px is unavoidable here — the site publishes no larger raster or SVG — so the 512px installer icon is a smooth interpolation of the official artwork rather than a true high-resolution original.
+
+`build/icon.ico` is a real multi-size ICO containing PNG-compressed frames from 16 to 256px. NSIS requires a genuine `.ico`: pointing `installerIcon` at the PNG fails the build with `invalid icon file`.
 
 ## Scrollbars
 

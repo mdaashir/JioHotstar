@@ -1,0 +1,47 @@
+version: 2
+
+updates:
+  # Runtime and build dependencies. Grouped so a week of patch bumps arrives as
+  # one pull request instead of fifteen.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      production-dependencies:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # electron-vite, vite, and the React plugin move together; bumping one
+      # alone produces peer conflicts that are not worth reviewing.
+      - dependency-name: vite
+        update-types:
+          - version-update:semver-major
+      - dependency-name: electron-vite
+        update-types:
+          - version-update:semver-major
+      # Electron is pinned deliberately to a Castlabs ECS build with Widevine.
+      # A registry-major bump would break DRM playback, so it is a manual
+      # decision made by changing the pinned GitHub tag.
+      - dependency-name: electron
+
+  # Keep the workflow actions themselves current. These are easy to let rot and
+  # they run with repository credentials.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - '*'
