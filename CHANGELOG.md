@@ -6,7 +6,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.1.7] - 2026-11-12
+## [0.1.8] - 2026-11-12
+
+**The first published release with a working production Widevine signature on
+Windows.** The changes below are identical to 0.1.7, which was tagged but never
+published — two mistakes in its release workflow are fixed here.
+
+### Fixed
+
+- **Windows never installed the EVS client.** The step's `run:` block is bash but had
+  no `shell: bash`, so Windows executed it with PowerShell and failed on `if [ -z`.
+- **macOS was handed the wrong path.** `evs-vmp sign-pkg` takes the package
+  _directory_ and globs `*.app` inside it; passing the `.app` bundle failed with
+  `No matching executable found`. Windows was unaffected, which is why only the macOS
+  jobs broke.
+
+## [0.1.7] - 2026-11-12 — **not published**
+
+Tagged but never released: the Windows job failed to install the EVS client and both
+macOS jobs failed on the signing path, so the publish job was skipped. The tag is left
+in place rather than moved. The fixes landed in 0.1.8.
 
 **The first genuinely VMP-signed release.** Windows builds now carry a production
 Widevine signature that verifies, so a real licence server should accept them instead
@@ -309,7 +328,8 @@ built on a Castlabs ECS Electron build so Widevine-protected playback works.
 - **Document picture-in-picture is unavailable** in Electron; video PiP is used
   instead.
 
-[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/mdaashir/JioHotstar/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/mdaashir/JioHotstar/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/mdaashir/JioHotstar/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/mdaashir/JioHotstar/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/mdaashir/JioHotstar/compare/v0.1.4...v0.1.5
