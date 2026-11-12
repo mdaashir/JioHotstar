@@ -154,9 +154,24 @@ jobs:
           # Drop the auto-update metadata and blockmaps: they are for the updater,
           # not something a user downloads by hand.
           rm -f latest*.yml *.blockmap
+
+          # GitHub rewrites spaces to dots in uploaded asset names, so a manifest
+          # generated from the original filenames names files that do not exist
+          # once downloaded ("JioHotstar Setup 0.1.2.exe" vs
+          # "JioHotstar.Setup.0.1.2.exe") and `sha256sum -c` fails. Normalise the
+          # names first, then hash what will actually be published.
+          for f in *; do
+            safe="${f// /.}"
+            if [ "$f" != "$safe" ]; then
+              mv -- "$f" "$safe"
+            fi
+          done
+
           sha256sum * > SHA256SUMS.txt
           echo "--- artifacts ---"
           ls -lh
+          echo "--- checksums ---"
+          cat SHA256SUMS.txt
 
       # The changelog in the repository is the source of truth. This pulls the
       # section for the tag being released, so the Release page and CHANGELOG.md
