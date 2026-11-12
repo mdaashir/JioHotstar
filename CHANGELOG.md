@@ -8,10 +8,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **macOS is now checked on every pull request.** `ci.yml` runs `verify` on
-  `macos-latest` alongside Ubuntu and Windows. Previously the only macOS
-  verification lived in the release workflow, which runs on a tag, so a macOS
-  regression was first discovered after a release had already been cut.
+- **macOS packaging is checked on every pull request.** A new `package (macos)`
+  job runs the same `dist:mac:arm64` command the release uses, then asserts the
+  app bundle carries an ad-hoc signature and that a DMG was produced. Previously a
+  broken packaging config was only discovered by the release workflow, with a tag
+  already pushed.
+
+### Security
+
+- **The IPC sender guard now trusts exactly one local file, not every `file://`
+  URL.** `isAppUrl` compared with `startsWith('file://')`, so any local document
+  counted as an app window. It now parses the URL, ignores the hash route, and
+  compares the decoded path against the bundled `out/renderer/index.html` — with
+  case-insensitive matching only on Windows, where the filesystem is. A copy of
+  `index.html` planted elsewhere on disk no longer qualifies, and neither does a
+  sibling file such as `index.html.bak`.
 
 ## [0.1.5] - 2026-11-12
 

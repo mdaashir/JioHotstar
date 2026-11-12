@@ -59,7 +59,7 @@ credentials.
 | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity: true` on every window, including popups | `src/main/window/window.manager.ts`, `src/main/security/navigation.guard.ts` |
 | No preload and no bridge in the player window — third-party content gets zero surface                                      | `src/main/window/window.manager.ts`                                          |
-| Every IPC handler validates the sender is a local window (`file://` or the dev server) before doing anything               | `src/main/security/sender.guard.ts`                                          |
+| Every IPC handler validates the sender is the app's own bundled renderer before doing anything                             | `src/main/security/sender.guard.ts`                                          |
 | Navigation allow-listed by hostname; anything else opens in the system browser                                             | `src/shared/navigation.ts`                                                   |
 | Webviews blocked; only _non-main-frame_ navigations are blocked, so in-player link clicks still work                       | `src/main/security/navigation.guard.ts`                                      |
 | Permissions denied by default, `fullscreen` and `mediaKeySystem` only                                                      | `src/main/security/permission.policy.ts`                                     |
@@ -78,8 +78,3 @@ credentials.
 - **Optional AdGuard DNS filtering is off by default** and routes DNS through a third
   party when enabled. It blocks third-party trackers and explicitly does not affect
   JioHotstar's own advertising, which is served from their domains.
-- **The sender guard trusts any `file://` origin**, not only the app's own bundle.
-  Remote pages cannot navigate there (`http(s)` origins cannot set a `file://`
-  location, and navigation is host-allow-listed regardless), but a local file opened
-  through a path the app controls is treated as trusted. Narrowing this to the app's
-  own `index.html` would be a reasonable hardening step.
