@@ -75,7 +75,7 @@
     "electron-vite": "^6.0.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "typescript": "~5.9.3",
