@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -73,14 +73,14 @@
     "electron": "https://github.com/castlabs/electron-releases#v45.2.1+wvcus",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.72.2",
+    "typescript-eslint": "^8.73.0",
     "vite": "^7.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
